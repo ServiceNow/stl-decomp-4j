@@ -232,7 +232,7 @@ class FlatLoessInterpolator extends LoessInterpolator {
 	/**
 	 * Weight update for FlatLinearInterpolator is a no-op.
 	 */
-	protected void updateWeights(double x, int left, int right) {
+	final protected void updateWeights(double x, int left, int right) {
 	}
 }
 
@@ -260,7 +260,7 @@ class LinearLoessInterpolator extends LoessInterpolator {
 	 * @param right
 	 *            int rightmost coordinate to use from the input data
 	 */
-	protected void updateWeights(double x, int left, int right) {
+	final protected void updateWeights(double x, int left, int right) {
 		double xMean = 0.0;
 		for (int i = left; i <= right; ++i)
 			xMean += i * fWeights[i];
@@ -310,7 +310,7 @@ class QuadraticLoessInterpolator extends LoessInterpolator {
 	 * @param right
 	 *            int rightmost coordinate to use from the input data
 	 */
-	protected void updateWeights(double x, int left, int right) {
+	final protected void updateWeights(double x, int left, int right) {
 
 		double x1Mean = 0.0;
 		double x2Mean = 0.0;
