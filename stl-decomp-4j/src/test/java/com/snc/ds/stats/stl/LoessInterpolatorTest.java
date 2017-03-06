@@ -1,8 +1,9 @@
 package com.snc.ds.stats.stl;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Tests for LoessInterpolator single-point LOESS interpolator
@@ -20,7 +21,7 @@ public class LoessInterpolatorTest {
 		double[] data = createConstantDataArray();
 
 		for (int degree = 0; degree < 3; ++degree) {
-			LoessInterpolator loess = new LoessInterpolator(7, degree, data);
+			LoessInterpolator loess = new LoessInterpolator.Builder().setWidth(7).setDegree(degree).interpolate(data);
 			checkFitToData(data, loess, 2.0e-11);
 		}
 	}
@@ -31,7 +32,7 @@ public class LoessInterpolatorTest {
 		double[] data = createConstantDataArray();
 
 		for (int degree = 0; degree < 3; ++degree) {
-			LoessInterpolator loess = new LoessInterpolator(7, degree, data);
+			LoessInterpolator loess = new LoessInterpolator.Builder().setWidth(7).setDegree(degree).interpolate(data);
 
 			Double y = loess.smoothOnePoint(-100, 0, data.length - 1);
 			assertNotNull(y);
@@ -49,7 +50,7 @@ public class LoessInterpolatorTest {
 		double[] data = createConstantDataArray();
 
 		for (int degree = 0; degree < 3; ++degree) {
-			LoessInterpolator loess = new LoessInterpolator(7, degree, data);
+			LoessInterpolator loess = new LoessInterpolator.Builder().setWidth(7).setDegree(degree).interpolate(data);
 
 			for (int i = 0; i < 99; ++i) {
 				double x = i + 0.5;
@@ -64,7 +65,7 @@ public class LoessInterpolatorTest {
 	public void linearDataReturnsDataOnLine() {
 		double[] data = createLinearDataArray();
 
-		LoessInterpolator loess = new LoessInterpolator(5, data);
+		LoessInterpolator loess = new LoessInterpolator.Builder().setWidth(5).interpolate(data);
 
 		for (int i = 0; i < data.length; ++i) {
 			Double y = loess.smoothOnePoint(i, Math.max(0, i - 2), Math.min(i + 2, data.length - 1));
@@ -77,8 +78,9 @@ public class LoessInterpolatorTest {
 	public void linearDataReturnsDataOnLine2() {
 		double[] data = createLinearDataArray();
 
+		final LoessInterpolator.Builder builder = new LoessInterpolator.Builder();
 		for (int degree = 1; degree < 3; ++degree) {
-			LoessInterpolator loess = new LoessInterpolator(5000, degree, data);
+			LoessInterpolator loess = builder.setWidth(5000).setDegree(degree).interpolate(data);
 			checkFitToData(data, loess, 1.0e-12);
 		}
 	}
@@ -89,8 +91,9 @@ public class LoessInterpolatorTest {
 		for (int i = 0; i < data.length; ++i)
 			data[i] = -0.25 * i;
 
+		final LoessInterpolator.Builder builder = new LoessInterpolator.Builder();
 		for (int degree = 1; degree < 3; ++degree) {
-			LoessInterpolator loess = new LoessInterpolator(7, degree, data);
+			LoessInterpolator loess = builder.setWidth(7).setDegree(degree).interpolate(data);
 
 			Double y = loess.smoothOnePoint(-100, 0, data.length - 1);
 			assertNotNull(y);
@@ -134,7 +137,7 @@ public class LoessInterpolatorTest {
 
 		// Choose a loess width sufficiently large that tri-cube weights for all of the data will be 1.0.
 
-		LoessInterpolator loess = new LoessInterpolator(1000000, scatter100);
+		LoessInterpolator loess = new LoessInterpolator.Builder().setWidth(1000000).interpolate(scatter100);
 
 		double x = -5.0;
 		while (x < 105.0) {
@@ -149,7 +152,7 @@ public class LoessInterpolatorTest {
 	public void quadraticDataReturnsDataOnParabolaWithQuadraticInterpolation() {
 		double[] data = createQuadraticDataArray();
 
-		LoessInterpolator loess = new LoessInterpolator(500000, 2, data);
+		LoessInterpolator loess = new LoessInterpolator.Builder().setWidth(500000).setDegree(2).interpolate(data);
 
 		for (int i = -100; i < data.length + 100; ++i) {
 			Double y = loess.smoothOnePoint(i, 0, data.length - 1);
@@ -190,7 +193,7 @@ public class LoessInterpolatorTest {
 				24.5632772509, 23.281240785751, 23.800117109909, 52.816749904647, 33.332347686135, 28.2914005902,
 				14.683404049683, 53.212854193497, 1.829566520138, 18.404833513506, -9.019769796879, 9.006983482915 };
 
-		LoessInterpolator loess = new LoessInterpolator(500000, 2, data);
+		LoessInterpolator loess = new LoessInterpolator.Builder().setWidth(500000).setDegree(2).interpolate(data);
 
 		for (int i = 0; i < data.length; ++i) {
 			Double y = loess.smoothOnePoint(i, 0, data.length - 1);
@@ -202,12 +205,12 @@ public class LoessInterpolatorTest {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void degreeCheck1() {
-		new LoessInterpolator(37, -1, createLinearDataArray());
+		new LoessInterpolator.Builder().setWidth(37).setDegree(-1).interpolate(createLinearDataArray());
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void degreeCheck2() {
-		new LoessInterpolator(37, 3, createLinearDataArray());
+		new LoessInterpolator.Builder().setWidth(37).setDegree(3).interpolate(createLinearDataArray());
 	}
 
 	// Utility functions...

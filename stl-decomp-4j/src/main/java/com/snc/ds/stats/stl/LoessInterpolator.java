@@ -5,46 +5,68 @@ package com.snc.ds.stats.stl;
  * <p>
  * Author: Jim Crotinger, based on the original RATFOR source from netlib, with quadratic regression added May 2016.
  */
-public class LoessInterpolator {
+abstract class LoessInterpolator {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// State
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private final double[] fData;
 	private final int fWidth;
-	private final int fDegree;
 	private final double[] fExternalWeights;
 
-	private final double[] fWeights;
+	final double[] fData;
+	final double[] fWeights;
+
+	// -----------------------------------------------------------------------------------------------------------------
+	// Construction
+	// -----------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * class LoessInterpolator.Builder - Builder for LoessInterpolator classes
+	 * <p>
+	 * Use a Builder pattern to support default arguments and eliminate the multiplicity of same-typed arguments.
+	 */
+	static class Builder {
+
+		private int fWidth;
+		private int fDegree = 1;
+		private double[] fExternalWeights = null;
+
+		public Builder setWidth(int width) {
+			fWidth = width;
+			return this;
+		}
+
+		Builder setDegree(int degree) {
+			if (degree < 0 || degree > 2)
+				throw new IllegalArgumentException("Degree must be 0, 1 or 2");
+
+			fDegree = degree;
+			return this;
+		}
+
+		Builder setExternalWeights(double[] weights) {
+			fExternalWeights = weights;
+			return this;
+		}
+
+		LoessInterpolator interpolate(double[] data) {
+			switch (fDegree) {
+				case 0:
+					return new FlatLoessInterpolator(fWidth, data, fExternalWeights);
+				case 1:
+					return new LinearLoessInterpolator(fWidth, data, fExternalWeights);
+				case 2:
+					return new QuadraticLoessInterpolator(fWidth, data, fExternalWeights);
+				default:
+					return null; // Can't actually get here but compiler didn't figure that out.
+			}
+		}
+	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// Interface
 	// -----------------------------------------------------------------------------------------------------------------
-
-	/**
-	 * Create a LoessInterpolator interpolator for the given data set with the specified smoothing width and
-	 * optional external Weights.
-	 *
-	 * @param width
-	 *            int approximate width the width of the neighborhood weighting function
-	 * @param degree
-	 *            int 2 for quadratic regression, 1 for linear regression, 0 for simple weighted average
-	 * @param data
-	 *            double[] underlying data set that is being smoothed
-	 * @param externalWeights
-	 *            double[] additional weights to apply in the smoothing. Ignored if null.
-	 */
-	public LoessInterpolator(int width, int degree, double[] data, double[] externalWeights) {
-		if (degree < 0 || degree > 2)
-			throw new IllegalArgumentException("Degree must be 0, 1 or 2");
-
-		this.fWidth = width;
-		this.fDegree = degree;
-		this.fData = data;
-		this.fExternalWeights = externalWeights;
-		this.fWeights = new double[data.length];
-	}
 
 	/**
 	 * Given a set of data on the regular grid {left, left+1, ..., right-1, right}, computed the LOESS-smoothed value at
@@ -58,31 +80,19 @@ public class LoessInterpolator {
 	 *            int rightmost coordinate to use from the input data
 	 * @return Double interpolated value, or null if interpolation could not be done
 	 */
-	public Double smoothOnePoint(final double x, final int left, final int right) {
+	Double smoothOnePoint(final double x, final int left, final int right) {
 
 		// Ordinarily, one doesn't do linear regression one x-value at a time, but LOESS does since
 		// each x-value will typically have a different window. As a result, the weighted linear regression
-		// is recast as a linear operation on the input data, weighted by this.weights.
+		// is recast as a linear operation on the input data, weighted by this.fWeights.
 
 		State state = computeNeighborhoodWeights(x, left, right);
 
 		if (state == State.WEIGHTS_FAILED)
 			return null;
 
-		// TODO: Refactor to use a strategy pattern - the degree will always be the same for all points.
-
-		if (state == State.LINEAR_OK) {
-			switch (fDegree) {
-				case 0:
-					break;
-				case 1:
-					updateWeightsForLinearRegression(x, left, right);
-					break;
-				case 2:
-					updateWeightsForQuadraticRegression(x, left, right);
-					break;
-			}
-		}
+		if (state == State.LINEAR_OK)
+			updateWeights(x, left, right);
 
 		double ys = 0.0;
 		for (int i = left; i <= right; ++i)
@@ -91,53 +101,18 @@ public class LoessInterpolator {
 		return ys;
 	}
 
-	// -----------------------------------------------------------------------------------------------------------------
-	// Overloads to effectively implement default parameters.
-	// -----------------------------------------------------------------------------------------------------------------
-
 	/**
-	 * Create a LoessInterpolator interpolator for the given data set with the specified smoothing width and
-	 * optional external Weights. Degree defaults to 1 (linear).
+	 * Update the weights for the appropriate least-squares interpolation.
 	 *
-	 * @param width
-	 *            int approximate width the width of the neighborhood weighting function
-	 * @param data
-	 *            double[] underlying data set that is being smoothed
-	 * @param externalWeights
-	 *            double[] additional weights to apply in the smoothing. Ignored if null.
+	 * @param x
+	 *            double x-coordinate at which we want to compute an estimate of y
+	 * @param left
+	 *            int leftmost coordinate to use from the input data
+	 * @param right
+	 *            int rightmost coordinate to use from the input data
 	 */
-	@SuppressWarnings("WeakerAccess")
-	public LoessInterpolator(int width, double[] data, @SuppressWarnings("SameParameterValue") double[] externalWeights) {
-		this(width, 1, data, externalWeights);
-	}
+	abstract void updateWeights(double x, int left, int right);
 
-	/**
-	 * Create a LoessInterpolator interpolator for the given data set with the specified smoothing width and
-	 * optional external Weights. Degree defaults to 1 (linear).
-	 *
-	 * @param width
-	 *            int approximate width the width of the neighborhood weighting function
-	 * @param data
-	 *            double[] underlying data set that is being smoothed
-	 */
-	public LoessInterpolator(int width, double[] data) {
-		this(width, data, null);
-	}
-
-	/**
-	 * Create a LoessInterpolator interpolator for the given data set with the specified smoothing width and
-	 * optional external Weights.
-	 *
-	 * @param width
-	 *            int approximate width the width of the neighborhood weighting function
-	 * @param degree
-	 *            int 2 for quadratic regression, 1 for linear regression, 0 for simple weighted average
-	 * @param data
-	 *            double[] underlying data set that is being smoothed
-	 */
-	public LoessInterpolator(int width, int degree, double[] data) {
-		this(width, degree, data, null);
-	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// Implementation
@@ -223,6 +198,59 @@ public class LoessInterpolator {
 	}
 
 	/**
+	 * Create a LoessInterpolator interpolator for the given data set with the specified smoothing width and
+	 * optional external Weights.
+	 *
+	 * @param width
+	 *            - the width of the neighborhood weighting function
+	 * @param data
+	 *            - underlying data set that is being smoothed
+	 * @param externalWeights
+	 *            - additional weights to apply in the smoothing. Ignored if null.
+	 */
+	LoessInterpolator(int width, double[] data, double[] externalWeights) {
+		this.fWidth = width;
+		this.fData = data;
+		this.fExternalWeights = externalWeights;
+		this.fWeights = new double[data.length];
+	}
+}
+
+class FlatLoessInterpolator extends LoessInterpolator {
+	/**
+	 * Create a LoessInterpolator interpolator for the given data set with the specified smoothing width and
+	 * optional external Weights.
+	 *
+	 * @param width           - the width of the neighborhood weighting function
+	 * @param data            - underlying data set that is being smoothed
+	 * @param externalWeights
+	 */
+	FlatLoessInterpolator(int width, double[] data, double[] externalWeights) {
+		super(width, data, externalWeights);
+	}
+
+	/**
+	 * Weight update for FlatLinearInterpolator is a no-op.
+	 */
+	protected void updateWeights(double x, int left, int right) {
+	}
+}
+
+class LinearLoessInterpolator extends LoessInterpolator {
+
+	/**
+	 * Create a LoessInterpolator interpolator for the given data set with the specified smoothing width and
+	 * optional external Weights.
+	 *
+	 * @param width           - the width of the neighborhood weighting function
+	 * @param data            - underlying data set that is being smoothed
+	 * @param externalWeights
+	 */
+	LinearLoessInterpolator(int width, double[] data, double[] externalWeights) {
+		super(width, data, externalWeights);
+	}
+
+	/**
 	 * Compute weighted least squares fit to the data points and adjust the weights with the results.
 	 *
 	 * @param x
@@ -232,8 +260,7 @@ public class LoessInterpolator {
 	 * @param right
 	 *            int rightmost coordinate to use from the input data
 	 */
-	private void updateWeightsForLinearRegression(double x, int left, int right) {
-
+	protected void updateWeights(double x, int left, int right) {
 		double xMean = 0.0;
 		for (int i = left; i <= right; ++i)
 			xMean += i * fWeights[i];
@@ -257,6 +284,21 @@ public class LoessInterpolator {
 				fWeights[i] *= (1.0 + beta * (i - xMean));
 		}
 	}
+}
+
+class QuadraticLoessInterpolator extends LoessInterpolator {
+
+	/**
+	 * Create a QuadraticLoessInterpolator interpolator for the given data set with the specified smoothing width and
+	 * optional external Weights.
+	 *
+	 * @param width           - the width of the neighborhood weighting function
+	 * @param data            - underlying data set that is being smoothed
+	 * @param externalWeights
+	 */
+	QuadraticLoessInterpolator(int width, double[] data, double[] externalWeights) {
+		super(width, data, externalWeights);
+	}
 
 	/**
 	 * Compute weighted least squares quadratic fit to the data points and adjust the weights with the results.
@@ -268,7 +310,7 @@ public class LoessInterpolator {
 	 * @param right
 	 *            int rightmost coordinate to use from the input data
 	 */
-	private void updateWeightsForQuadraticRegression(double x, int left, int right) {
+	protected void updateWeights(double x, int left, int right) {
 
 		double x1Mean = 0.0;
 		double x2Mean = 0.0;
@@ -307,9 +349,9 @@ public class LoessInterpolator {
 			final double a1 = beta2 * x1 - beta3 * x2;
 			final double a2 = beta4 * x2 - beta3 * x1;
 
-			for (int i = left; i <= right; ++i) {
+			for (int i = left; i <= right; ++i)
 				fWeights[i] *= (1 + a1 * (i - x1Mean) + a2 * (i * i - x2Mean));
-			}
+
 		}
 	}
 }

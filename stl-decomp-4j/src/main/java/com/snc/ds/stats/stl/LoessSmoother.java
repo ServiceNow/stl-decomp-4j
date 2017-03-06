@@ -36,7 +36,8 @@ public class LoessSmoother {
 	 *            double[] additional weights to apply in the smoothing. Ignored if null.
 	 */
 	public LoessSmoother(int width, int jump, int degree, double[] data, double[] externalWeights) {
-		this.fInterpolator = new LoessInterpolator(width, degree, data, externalWeights);
+		final LoessInterpolator.Builder b = new LoessInterpolator.Builder();
+		this.fInterpolator = b.setWidth(width).setDegree(degree).setExternalWeights(externalWeights).interpolate(data);
 		this.fData = data;
 		this.fJump = Math.min(jump, data.length - 1);
 		this.fWidth = width;
