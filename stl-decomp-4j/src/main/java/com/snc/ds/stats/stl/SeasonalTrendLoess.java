@@ -1,8 +1,8 @@
 package com.snc.ds.stats.stl;
 
-import static com.snc.ds.stats.TimeSeriesUtilities.simpleMovingAverage;
-
 import java.util.Arrays;
+
+import static com.snc.ds.stats.TimeSeriesUtilities.simpleMovingAverage;
 
 /**
  * Java implementation of the Seasonal-Trend-Loess algorithm for evenly spaced data. This is basically a direct port of
@@ -162,16 +162,20 @@ public class SeasonalTrendLoess {
 
 		private void sanityCheck(double[] data) {
 			if (data == null)
-				throw new IllegalArgumentException("Data array must be non-null");
+				throw new IllegalArgumentException(
+						"SeasonalTrendLoess.Builder: Data array must be non-null");
 
 			if (fSeasonalWidth == null)
-				throw new IllegalArgumentException("Seasonal LOESS Width must be specified.");
+				throw new IllegalArgumentException(
+						"SeasonalTrendLoess.Builder: Seasonal LOESS Width must be specified.");
 
 			if (fPeriodLength == null)
-				throw new IllegalArgumentException("Period Length must be specified");
+				throw new IllegalArgumentException(
+						"SeasonalTrendLoess.Builder: Period Length must be specified");
 
 			if (data.length < 2 * fPeriodLength)
-				throw new IllegalArgumentException("Data series must be at least 2 * periodicity in length");
+				throw new IllegalArgumentException(
+						"SeasonalTrendLoess.Builder: Data series must be at least 2 * periodicity in length");
 		}
 	}
 
@@ -186,8 +190,10 @@ public class SeasonalTrendLoess {
 	 * @param trendSettings    - the settings for the LOESS smoother for the trend component
 	 * @param lowpassSettings  - the settings for the LOESS smoother used in de-seasonalizing
 	 */
-	private SeasonalTrendLoess(double[] data, int periodicity, int ni, int no, LoessSettings seasonalSettings,
-	                           LoessSettings trendSettings, LoessSettings lowpassSettings) {
+	// Could be private but causes a hidden class to be generated in order for the Builder to have access.
+	@SuppressWarnings("WeakerAccess")
+	SeasonalTrendLoess(double[] data, int periodicity, int ni, int no, LoessSettings seasonalSettings,
+                       LoessSettings trendSettings, LoessSettings lowpassSettings) {
 
 		fDecomposition = new Decomposition(data); // TODO: Move to decompose
 
@@ -457,16 +463,6 @@ public class SeasonalTrendLoess {
 		fDecomposition = null;
 
 		return result;
-	}
-
-	/**
-	 * Smooth the STL seasonal component with quadratic LOESS and recompute the residual.
-	 *
-	 * @param width
-	 *            the width of the LOESS smoother used to smooth the seasonal component.
-	 */
-	public void smoothSeasonal(int width) {
-		fDecomposition.smoothSeasonal(width);
 	}
 
 	/**

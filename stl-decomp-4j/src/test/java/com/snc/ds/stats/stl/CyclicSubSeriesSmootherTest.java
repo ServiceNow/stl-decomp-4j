@@ -1,10 +1,10 @@
 package com.snc.ds.stats.stl;
 
-import static com.snc.ds.stats.stl.CyclicSubSeriesSmoother.*;
+import org.junit.Test;
+
+import static com.snc.ds.stats.stl.CyclicSubSeriesSmoother.Builder;
 import static java.lang.Math.PI;
 import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
 
 public class CyclicSubSeriesSmootherTest {
 
@@ -50,8 +50,8 @@ public class CyclicSubSeriesSmootherTest {
 		double[] extendedData = new double[6 * period];
 
 		Builder builder = new Builder();
-		builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
-		builder.extrapolateForwardOnly(4);
+		builder = builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
+		builder = builder.extrapolateForwardOnly(4);
 
 		CyclicSubSeriesSmoother sssmoother = builder.setDataLength(data.length).setPeriodicity(period).build();
 
@@ -77,9 +77,8 @@ public class CyclicSubSeriesSmootherTest {
 		double[] extendedData = new double[6 * period];
 
 		Builder builder = new Builder();
-		builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
-		builder.setNumPeriodsForward(2);
-		builder.setNumPeriodsBackward(2);
+		builder = builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
+		builder = builder.setNumPeriodsForward(2).setNumPeriodsBackward(2);
 
 		CyclicSubSeriesSmoother sssmoother = builder.setDataLength(data.length).setPeriodicity(period).build();
 
@@ -90,6 +89,18 @@ public class CyclicSubSeriesSmootherTest {
 			final double value = amplitude * Math.sin(i * dx);
 			assertEquals(String.format("test point %d", i), value, extendedData[i], 1.0e-11);
 		}
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void degreeMustBePositive() {
+		Builder builder = new Builder();
+		builder.setDegree(-1);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void degreeMustBeLessThanThree() {
+		Builder builder = new Builder();
+		builder.setDegree(3);
 	}
 
 }

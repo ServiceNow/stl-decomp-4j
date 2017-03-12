@@ -213,6 +213,16 @@ public class LoessInterpolatorTest {
 		new LoessInterpolator.Builder().setWidth(37).setDegree(3).interpolate(createLinearDataArray());
 	}
 
+	@Test(expected = IllegalStateException.class)
+	public void widthMustBeSet() {
+		new LoessInterpolator.Builder().interpolate(new double[2000]);
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void dataMustBeNonNull() {
+		new LoessInterpolator.Builder().setWidth(17).interpolate(null);
+	}
+
 	// Utility functions...
 
 	private void checkFitToData(double[] data, LoessInterpolator loess, double eps) {

@@ -28,7 +28,7 @@ abstract class LoessInterpolator {
 	 */
 	static class Builder {
 
-		private int fWidth;
+		private Integer fWidth = null;
 		private int fDegree = 1;
 		private double[] fExternalWeights = null;
 
@@ -51,6 +51,12 @@ abstract class LoessInterpolator {
 		}
 
 		LoessInterpolator interpolate(double[] data) {
+			if (fWidth == null)
+				throw new IllegalStateException("LoessInterpolator.Builder: Width must be set");
+
+			if (data == null)
+				throw new IllegalStateException("LoessInterpolator.Builder: data must be non-null");
+
 			switch (fDegree) {
 				case 0:
 					return new FlatLoessInterpolator(fWidth, data, fExternalWeights);

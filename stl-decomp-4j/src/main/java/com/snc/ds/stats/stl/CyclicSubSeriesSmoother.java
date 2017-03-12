@@ -23,7 +23,7 @@ public class CyclicSubSeriesSmoother {
 	private final LoessSmoother.Builder fLoessSmootherFactory;
 
 	/**
-	 * Use Builder to simplify complex contruction patterns.
+	 * Use Builder to simplify complex construction patterns.
 	 */
 	public static class Builder {
 		private int fWidth;
@@ -102,9 +102,9 @@ public class CyclicSubSeriesSmoother {
 	 * @param numPeriodsToExtrapolateForward
 	 *      - numbers of periods to extrapolate forward
 	 */
-	private CyclicSubSeriesSmoother(int width, int degree, int jump,
-									int dataLength, int periodicity,
-                                    int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward) {
+	CyclicSubSeriesSmoother(int width, int degree, int jump,
+							int dataLength, int periodicity,
+                            int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward) {
 		fWidth = width;
 
 		fLoessSmootherFactory = new LoessSmoother.Builder().setWidth(width).setJump(jump).setDegree(degree);

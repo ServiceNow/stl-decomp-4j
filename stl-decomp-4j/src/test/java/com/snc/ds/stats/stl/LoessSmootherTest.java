@@ -2,7 +2,7 @@ package com.snc.ds.stats.stl;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit test for LoessSmoother component of Java STL implementation.
@@ -109,6 +109,26 @@ public class LoessSmootherTest {
 		double[] smoothed = loess.smooth();
 		assertEquals(1, smoothed.length);
 		assertEquals(Math.PI, smoothed[0], Math.ulp(Math.PI));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void degreeMustBePositive() {
+		new LoessSmoother.Builder().setDegree(-1);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void degreeMustBeLessThanThree() {
+		new LoessSmoother.Builder().setDegree(3);
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void widthMustBeSet() {
+		new LoessSmoother.Builder().setData(new double[1000]).build();
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void dataMustBeSet() {
+		new LoessSmoother.Builder().setWidth(17).build();
 	}
 
 	// Noisy periodic data generated in Python with

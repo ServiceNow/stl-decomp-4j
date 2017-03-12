@@ -17,7 +17,7 @@ public class LoessSmoother {
 	private final double[] fSmoothed;
 
 	public static class Builder {
-		private int fWidth;
+		private Integer fWidth = null;
 		private int fDegree = 1;
 		private int fJump = 1;
 		private double[] fExternalWeights = null;
@@ -28,7 +28,7 @@ public class LoessSmoother {
 			return this;
 		}
 
-		Builder setDegree(int degree) {
+		public Builder setDegree(int degree) {
 			if (degree < 0 || degree > 2)
 				throw new IllegalArgumentException("Degree must be 0, 1 or 2");
 
@@ -36,23 +36,28 @@ public class LoessSmoother {
 			return this;
 		}
 
-		Builder setJump(int jump) {
+		public Builder setJump(int jump) {
 			fJump = jump;
 			return this;
 		}
 
-		Builder setExternalWeights(double[] weights) {
+		public Builder setExternalWeights(double[] weights) {
 			fExternalWeights = weights;
 			return this;
-
 		}
 
-		Builder setData(double[] data) {
+		public Builder setData(double[] data) {
 			fData = data;
 			return this;
 		}
 
-		LoessSmoother build() {
+		public LoessSmoother build() {
+			if (fWidth == null)
+				throw new IllegalStateException("LoessSmoother.Builder: Width must be set before calling build");
+
+			if (fData == null)
+				throw new IllegalStateException("LoessSmoother.Builder: Data must be set before calling build");
+
 			return new LoessSmoother(fWidth, fJump, fDegree, fData, fExternalWeights);
 		}
 	}
