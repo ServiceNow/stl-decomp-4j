@@ -20,70 +20,94 @@ public class CyclicSubSeriesSmoother {
 	private final int fNumPeriodsToExtrapolateForward;
 
 	private final int fWidth;
-	private final int fDegree;
-	private final int fJump;
+	private final LoessSmoother.Builder fLoessSmootherFactory;
 
 	/**
-	 * Run the cyclic sub-series smoother on the specified data, with the specified weights (ignored if null). The
-	 * sub-series are reconstructed into a single series in smoothedData.
-	 * </p>
-	 * Defaults numPeriodsToExtrapolateBackward to 1
-	 * </p>
-	 * Defaults numPeriodsToExtrapolateForward to 1
-	 * </p>
-	 * @param settings
-	 *            LoessSettings input data
-	 * @param dataLength
-	 *            int length of the input data
-	 * @param periodicity
-	 *            int length of the cyclic period.
-	 *
+	 * Use Builder to simplify complex contruction patterns.
 	 */
-	public CyclicSubSeriesSmoother(LoessSettings settings, int dataLength, int periodicity) {
-		this(settings, dataLength, periodicity, 1, 1);
+	public static class Builder {
+		private int fWidth;
+		private int fDegree = 1;
+		private int fJump = 1;
+		private int fDataLength;
+		private int fPeriodicity;
+		private int fNumPeriodsBackward = 1;
+		private int fNumPeriodsForward = 1;
+
+		public Builder setWidth(int width) {
+			fWidth = width;
+			return this;
+		}
+
+		public Builder setDegree(int degree) {
+			if (degree < 0 || degree > 2)
+				throw new IllegalArgumentException("Degree must be 0, 1 or 2");
+
+			fDegree = degree;
+			return this;
+		}
+
+		public Builder setJump(int jump) {
+			fJump = jump;
+			return this;
+		}
+
+		public Builder setDataLength(int dataLength) {
+			fDataLength = dataLength;
+			return this;
+		}
+
+		public Builder setPeriodicity(int periodicity) {
+			fPeriodicity = periodicity;
+			return this;
+		}
+
+		public Builder extrapolateForwardOnly(int periods) {
+			fNumPeriodsForward = periods;
+			fNumPeriodsBackward = 0;
+			return this;
+		}
+
+		public Builder setNumPeriodsForward(int periods) {
+			fNumPeriodsForward = periods;
+			return this;
+		}
+
+		public Builder setNumPeriodsBackward(int periods) {
+			fNumPeriodsBackward = periods;
+			return this;
+		}
+
+		public CyclicSubSeriesSmoother build() {
+			return new CyclicSubSeriesSmoother(fWidth, fDegree, fJump, fDataLength, fPeriodicity,
+					fNumPeriodsBackward, fNumPeriodsForward);
+		}
 	}
 
 	/**
-	 * Run the cyclic sub-series smoother on the specified data, with the specified weights (ignored if null). The
-	 * sub-series are reconstructed into a single series in smoothedData.
-	 * </p>
-	 * Defaults numPeriodsToExtrapolateBackward to 0
-	 * </p>
-	 * @param settings
-	 *            LoessSettings input data
-	 * @param dataLength
-	 *            int length of the input data
-	 * @param periodicity
-	 *            int length of the cyclic period.
-	 * @param numPeriodsToExtrapolateBackward
-	 *            int number of periods to extrapolate backwards from the first point of the input data.
+	 * Create a cyclic sub-series smoother with the specified properties.
 	 *
-	 */
-	public CyclicSubSeriesSmoother(LoessSettings settings, int dataLength, int periodicity,
-	                               @SuppressWarnings("SameParameterValue") int numPeriodsToExtrapolateForward) {
-		this(settings, dataLength, periodicity, 0, numPeriodsToExtrapolateForward);
-	}
-
-	/**
-	 * Run the cyclic sub-series smoother on the specified data, with the specified weights (ignored if null). The
-	 * sub-series are reconstructed into a single series in smoothedData.
-	 *
-	 * @param settings
-	 *            LoessSettings input data
+	 * @param width
+	 *      - width of the LOESS smoother
+	 * @param degree
+	 *      - degree of the LOESS smoother
+	 * @param jump
+	 *      - jump to use in LOESS smoothing
 	 * @param dataLength
-	 *            int length of the input data
+	 *      - length of the input data
 	 * @param periodicity
-	 *            int length of the cyclic period.
+	 *      - length of the cyclic period
 	 * @param numPeriodsToExtrapolateBackward
-	 *            int number of periods to extrapolate backwards from the first point of the input data.
+	 *      - number of periods to extrapolate backward
 	 * @param numPeriodsToExtrapolateForward
-	 *            int number of periods to extrapolate forwards from the last point of the input data.
+	 *      - numbers of periods to extrapolate forward
 	 */
-	CyclicSubSeriesSmoother(LoessSettings settings, int dataLength, int periodicity,
-			int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward) {
-		fWidth = settings.getWidth();
-		fDegree = settings.getDegree();
-		fJump = settings.getJump();
+	private CyclicSubSeriesSmoother(int width, int degree, int jump,
+									int dataLength, int periodicity,
+                                    int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward) {
+		fWidth = width;
+
+		fLoessSmootherFactory = new LoessSmoother.Builder().setWidth(width).setJump(jump).setDegree(degree);
 
 		fPeriodLength = periodicity;
 		fNumPeriods = dataLength / periodicity;
@@ -182,7 +206,7 @@ public class CyclicSubSeriesSmoother {
 
 		// Smooth the cyclic sub-series with LOESS and then extrapolate one place beyond each end.
 
-		LoessSmoother smoother = new LoessSmoother(fWidth, fJump, fDegree, rawData, weights);
+		LoessSmoother smoother = fLoessSmootherFactory.setData(rawData).setExternalWeights(weights).build();
 
 		// Copy, shifting by 1 to leave room for the extrapolated point at the beginning.
 

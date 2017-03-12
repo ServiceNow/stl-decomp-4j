@@ -46,9 +46,11 @@ public class LoessSmootherTest {
 
 		// Choose a loess width sufficiently large that tri-cube weights for all of the data will be 1.0.
 
+		final LoessSmoother.Builder builder = new LoessSmoother.Builder().setWidth(1000000).setData(scatter100);
+
 		for (int j = 1; j < scatter100.length - 1; ++j) {
 
-			LoessSmoother loess = new LoessSmoother(1000000, j, 1, scatter100, null);
+			LoessSmoother loess = builder.setJump(j).build();
 
 			double[] smoothedPoints = loess.smooth();
 
@@ -64,7 +66,7 @@ public class LoessSmootherTest {
 	public void smoothedNoisySinusoid() {
 
 		int width = noisySinusoid.length / 3;
-		LoessSmoother loess = new LoessSmoother(width, 1, 1, noisySinusoid, null);
+		LoessSmoother loess = new LoessSmoother.Builder().setWidth(width).setData(noisySinusoid).build();
 
 		double[] y = loess.smooth();
 
@@ -77,7 +79,7 @@ public class LoessSmootherTest {
 	public void smoothedNoisySinusoidQuadratic() {
 
 		int width = noisySinusoid.length / 3;
-		LoessSmoother loess = new LoessSmoother(width, 1, 2, noisySinusoid, null);
+		LoessSmoother loess = new LoessSmoother.Builder().setWidth(width).setDegree(2).setData(noisySinusoid).build();
 
 		double[] y = loess.smooth();
 
@@ -90,7 +92,7 @@ public class LoessSmootherTest {
 	public void smoothedNoisySinusoidWithShortJump() {
 
 		int width = noisySinusoid.length / 3;
-		LoessSmoother loess = new LoessSmoother(width, 2, 1, noisySinusoid, null);
+		LoessSmoother loess = new LoessSmoother.Builder().setWidth(width).setJump(2).setData(noisySinusoid).build();
 
 		double[] y = loess.smooth();
 
@@ -102,7 +104,7 @@ public class LoessSmootherTest {
 	public void smoothingSinglePointReturnsThatPoint() {
 		double[] data = { Math.PI };
 
-		LoessSmoother loess = new LoessSmoother(3, 1, 1, data, null);
+		LoessSmoother loess = new LoessSmoother.Builder().setWidth(3).setData(data).build();
 
 		double[] smoothed = loess.smooth();
 		assertEquals(1, smoothed.length);

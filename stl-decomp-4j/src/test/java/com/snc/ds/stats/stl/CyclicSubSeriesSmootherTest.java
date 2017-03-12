@@ -1,5 +1,6 @@
 package com.snc.ds.stats.stl;
 
+import static com.snc.ds.stats.stl.CyclicSubSeriesSmoother.*;
 import static java.lang.Math.PI;
 import static org.junit.Assert.assertEquals;
 
@@ -22,9 +23,10 @@ public class CyclicSubSeriesSmootherTest {
 
 		double[] extendedData = new double[4 * period];
 
-		LoessSettings seasonalSettings = new LoessSettings(7); // Sub-cycle data is linear so width shouldn't matter
+		Builder builder = new Builder();
+		builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
 
-		CyclicSubSeriesSmoother sssmoother = new CyclicSubSeriesSmoother(seasonalSettings, data.length, period);
+		CyclicSubSeriesSmoother sssmoother = builder.setDataLength(data.length).setPeriodicity(period).build();
 
 		sssmoother.smoothSeasonal(data, extendedData, null);
 
@@ -47,9 +49,12 @@ public class CyclicSubSeriesSmootherTest {
 
 		double[] extendedData = new double[6 * period];
 
-		LoessSettings seasonalSettings = new LoessSettings(7); // Sub-cycle data is linear so width shouldn't matter
+		Builder builder = new Builder();
+		builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
+		builder.extrapolateForwardOnly(4);
 
-		CyclicSubSeriesSmoother sssmoother = new CyclicSubSeriesSmoother(seasonalSettings, data.length, period, 4);
+		CyclicSubSeriesSmoother sssmoother = builder.setDataLength(data.length).setPeriodicity(period).build();
+
 		sssmoother.smoothSeasonal(data, extendedData, null);
 
 		for (int i = 0; i < extendedData.length; ++i) {
@@ -71,9 +76,13 @@ public class CyclicSubSeriesSmootherTest {
 
 		double[] extendedData = new double[6 * period];
 
-		LoessSettings seasonalSettings = new LoessSettings(7); // Sub-cycle data is linear so width shouldn't matter
+		Builder builder = new Builder();
+		builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
+		builder.setNumPeriodsForward(2);
+		builder.setNumPeriodsBackward(2);
 
-		CyclicSubSeriesSmoother sssmoother = new CyclicSubSeriesSmoother(seasonalSettings, data.length, period, 2, 2);
+		CyclicSubSeriesSmoother sssmoother = builder.setDataLength(data.length).setPeriodicity(period).build();
+
 		sssmoother.smoothSeasonal(data, extendedData, null);
 
 		for (int i = 0; i < extendedData.length; ++i) {

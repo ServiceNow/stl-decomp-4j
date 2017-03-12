@@ -9,6 +9,8 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.snc.ds.stats.stl.SeasonalTrendLoess.Builder;
+
 public class SeasonalitySmoothingTest {
 
 	private final StlTestDataGenerator fTestData = new StlTestDataGenerator();
@@ -19,9 +21,13 @@ public class SeasonalitySmoothingTest {
 		final double[] data = fTestData.values;
 
 		int periodicity = 168;
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, periodicity, 2001, 1, 15);
 
-		stl.decompose();
+		Builder builder = new Builder().setPeriodLength(periodicity).setSeasonalWidth(2001);
+		builder.setInnerIterations(1).setRobustnessIterations(15);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
 
 		double epsilon = 5.0e-03; // Doing absolute differences and some values > 10
 
@@ -37,8 +43,11 @@ public class SeasonalitySmoothingTest {
 		}
 
 		double[] extendedSeasonal = new double[seasonal.length + 2 * periodicity];
-		LoessSettings seasonalSettings = new LoessSettings(2001);
-		CyclicSubSeriesSmoother seasonal_smoother = new CyclicSubSeriesSmoother(seasonalSettings, seasonal.length, periodicity);
+
+		final CyclicSubSeriesSmoother.Builder csBuilder = new CyclicSubSeriesSmoother.Builder().setWidth(2001);
+		csBuilder.setDataLength(seasonal.length).setPeriodicity(periodicity);
+		CyclicSubSeriesSmoother seasonal_smoother = csBuilder.build();
+
 		seasonal_smoother.smoothSeasonal(seasonal, extendedSeasonal, null);
 
 		double[] modelSeasonal = new double[2*periodicity];
@@ -58,8 +67,8 @@ public class SeasonalitySmoothingTest {
 //			modelTrend[i + periodicity] = trendEnd + (i + 1) * trendSlope;
 		}
 
-		LoessSettings settings = new LoessSettings(13, 2, 1);
-		LoessSmoother smoother = new LoessSmoother(settings, modelSeasonal, null);
+		final LoessSmoother.Builder loessBuilder = new LoessSmoother.Builder().setWidth(13).setDegree(2).setJump(1);
+		LoessSmoother smoother = loessBuilder.setData(modelSeasonal).build();
 
 		double[] smoothedModelSeasonal = smoother.smooth();
 
@@ -81,9 +90,13 @@ public class SeasonalitySmoothingTest {
 		final double[] data = fTestData.values;
 
 		int periodicity = 168;
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, periodicity, 2001, 1, 15);
 
-		stl.decompose();
+		Builder builder = new Builder().setPeriodLength(periodicity).setSeasonalWidth(2001);
+		builder.setInnerIterations(1).setRobustnessIterations(15);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
 
 		TestUtilities.dumpStlResultsToFile(data, stl, "/tmp/stl_java.csv");
 

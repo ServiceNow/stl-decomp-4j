@@ -10,7 +10,8 @@ import java.io.IOException;
  */
 class TestUtilities {
 
-	static void dumpStlResultsToFile(double[] data, SeasonalTrendLoess stl, String fileName) throws IOException {
+	static void dumpStlResultsToFile(
+			double[] data, SeasonalTrendLoess.Decomposition stl, String fileName) throws IOException {
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
 		double[] residuals = stl.getResiduals();

@@ -12,7 +12,8 @@ import java.util.Arrays;
  */
 public class SeasonalTrendLoess {
 
-	private final double[] fData;
+	private Decomposition fDecomposition;
+
 	private final int fPeriodLength;
 	private final LoessSettings fSeasonalSettings;
 	private final LoessSettings fTrendSettings;
@@ -20,142 +21,204 @@ public class SeasonalTrendLoess {
 	private final int fInnerIterations;
 	private final int fRobustIterations;
 
-	private final double[] fTrend;
-	private final double[] fSeasonal;
-	private final double[] fResiduals;
-	private final double[] fWeights;
-
 	private final double[] fDetrend;
 	private final double[] fExtendedSeasonal;
 
 	private double[] fDeSeasonalized; // TODO: Garbage - can this be made in-place?
 
-	private final CyclicSubSeriesSmoother cyclicSubSeries;
+	private final CyclicSubSeriesSmoother fCyclicSubSeriesSmoother;
+	private final LoessSmoother.Builder fLoessSmootherFactory;
+	private final LoessSmoother.Builder fLowpassLoessFactory;
 
-	private static int calcDefaultTrendWidth(int periodicity, int seasonalWidth) {
-		// This formula is based on a numerical stability analysis in the original paper.
-		return (int) (1.5 * periodicity / (1 - 1.5 / seasonalWidth) + 0.5);
+	/**
+	 * Builder class for SeasonalTrendLoess decomposition
+	 */
+	public static class Builder {
+		private Integer fPeriodLength = null;
+
+		private Integer fSeasonalWidth = null;
+		private Integer fSeasonalJump = null;
+		private int fSeasonalDegree = 1;
+
+		private Integer fTrendWidth = null;
+		private Integer fTrendJump = null;
+		private int fTrendDegree = 1;
+
+		private Integer fLowpassWidth = null;
+		private Integer fLowpassJump = null;
+		private int fLowpassDegree = 1;
+
+		// Following the R interface, we default to "non-robust"
+
+		private int fInnerIterations = 2;
+		private int fRobustIterations = 0;
+
+		private LoessSettings buildSettings(int width, int degree, Integer jump) {
+			if (jump == null) {
+				return new LoessSettings(width, degree);
+			} else {
+				return new LoessSettings(width, degree, jump);
+			}
+		}
+
+		public Builder setPeriodLength(int period) {
+			if (period < 2)
+				throw new IllegalArgumentException("periodicity must be at least 2");
+
+			fPeriodLength = period;
+			return this;
+		}
+
+		public Builder setSeasonalWidth(int width) {
+			fSeasonalWidth = width;
+			return this;
+		}
+
+		public Builder setSeasonalDegree(int degree) {
+			fSeasonalDegree = degree;
+			return this;
+		}
+
+		public Builder setSeasonalJump(int jump) {
+			fSeasonalJump = jump;
+			return this;
+		}
+
+		public Builder setTrendWidth(int width) {
+			fTrendWidth = width;
+			return this;
+		}
+
+		public Builder setTrendDegree(int degree) {
+			fTrendDegree = degree;
+			return this;
+		}
+
+		public Builder setTrendJump(int jump) {
+			fTrendJump = jump;
+			return this;
+		}
+
+		public Builder setLowpassWidth(int width) {
+			fLowpassWidth = width;
+			return this;
+		}
+
+		public Builder setLowpassDegree(int degree) {
+			fLowpassDegree = degree;
+			return this;
+		}
+
+		public Builder setLowpassJump(int jump) {
+			fLowpassJump = jump;
+			return this;
+		}
+
+		public Builder setInnerIterations(int ni) {
+			fInnerIterations = ni;
+			return this;
+		}
+
+		public Builder setRobustnessIterations(int no) {
+			fRobustIterations = no;
+			return this;
+		}
+
+		public Builder setRobust() {
+			fInnerIterations = 1;
+			fRobustIterations = 15;
+			return this;
+		}
+
+		public Builder setNonRobust() {
+			fInnerIterations = 2;
+			fRobustIterations = 0;
+			return this;
+		}
+
+		public SeasonalTrendLoess buildSmoother(double[] data) {
+			sanityCheck(data);
+
+			LoessSettings seasonalSettings = buildSettings(fSeasonalWidth, fSeasonalDegree, fSeasonalJump);
+
+			if (fTrendWidth == null)
+				fTrendWidth = calcDefaultTrendWidth(fPeriodLength, fSeasonalWidth);
+
+			LoessSettings trendSettings = buildSettings(fTrendWidth, fTrendDegree, fTrendJump);
+
+			if (fLowpassWidth == null)
+				fLowpassWidth = fPeriodLength;
+
+			LoessSettings lowpassSettings = buildSettings(fLowpassWidth, fLowpassDegree, fLowpassJump);
+
+			return new SeasonalTrendLoess(data, fPeriodLength, fInnerIterations, fRobustIterations,
+					seasonalSettings, trendSettings, lowpassSettings);
+		}
+
+		private static int calcDefaultTrendWidth(int periodicity, int seasonalWidth) {
+			// This formula is based on a numerical stability analysis in the original paper.
+			return (int) (1.5 * periodicity / (1 - 1.5 / seasonalWidth) + 0.5);
+		}
+
+		private void sanityCheck(double[] data) {
+			if (data == null)
+				throw new IllegalArgumentException("Data array must be non-null");
+
+			if (fSeasonalWidth == null)
+				throw new IllegalArgumentException("Seasonal LOESS Width must be specified.");
+
+			if (fPeriodLength == null)
+				throw new IllegalArgumentException("Period Length must be specified");
+
+			if (data.length < 2 * fPeriodLength)
+				throw new IllegalArgumentException("Data series must be at least 2 * periodicity in length");
+		}
 	}
 
 	/**
 	 * Construct STL specifying full details of the LOESS smoothers via LoessSettings objects.
 	 *
-	 * @param data
-	 *            - the data to be decomposed
-	 * @param periodicity
-	 *            - the periodicity of the data
-	 * @param ni
-	 *            - the number of inner iterations
-	 * @param no
-	 *            - the number of outer "robustness" iterations
-	 * @param seasonalSettings
-	 *            - the settings for the LOESS smoother for the cyclic sub-series
-	 * @param trendSettings
-	 *            - the settings for the LOESS smoother for the trend component
-	 * @param lowpassSettings
-	 *            - the settings for the LOESS smoother used in de-seasonalizing
+	 * @param data             - the data to be decomposed
+	 * @param periodicity      - the periodicity of the data
+	 * @param ni               - the number of inner iterations
+	 * @param no               - the number of outer "robustness" iterations
+	 * @param seasonalSettings - the settings for the LOESS smoother for the cyclic sub-series
+	 * @param trendSettings    - the settings for the LOESS smoother for the trend component
+	 * @param lowpassSettings  - the settings for the LOESS smoother used in de-seasonalizing
 	 */
-	public SeasonalTrendLoess(double[] data, int periodicity, int ni, int no, LoessSettings seasonalSettings,
-			LoessSettings trendSettings, LoessSettings lowpassSettings) {
+	private SeasonalTrendLoess(double[] data, int periodicity, int ni, int no, LoessSettings seasonalSettings,
+	                           LoessSettings trendSettings, LoessSettings lowpassSettings) {
 
-		if (periodicity < 2)
-			throw new RuntimeException("periodicity must be at least 2");
+		fDecomposition = new Decomposition(data); // TODO: Move to decompose
 
-		if (data.length < 2 * periodicity)
-			throw new RuntimeException("Data series must be at least 2 * periodicity in length");
+		final int size = data.length;
 
-		this.fData = data;
-		this.fPeriodLength = periodicity;
-		this.fSeasonalSettings = seasonalSettings;
-		this.fTrendSettings = trendSettings;
-		this.fLowpassSettings = lowpassSettings;
-		this.fInnerIterations = ni;
-		this.fRobustIterations = no;
-		this.cyclicSubSeries = new CyclicSubSeriesSmoother(seasonalSettings, data.length, periodicity);
+		fPeriodLength = periodicity;
+		fSeasonalSettings = seasonalSettings;
+		fTrendSettings = trendSettings;
+		fLowpassSettings = lowpassSettings;
+		fInnerIterations = ni;
+		fRobustIterations = no;
 
-		final int size = fData.length;
-		fTrend = new double[size];
-		fSeasonal = new double[size];
-		fResiduals = new double[size];
-		fWeights = new double[size];
+		fLoessSmootherFactory = new LoessSmoother.Builder() //
+				.setWidth(fTrendSettings.getWidth()) //
+				.setDegree(fTrendSettings.getDegree()) //
+				.setJump(fTrendSettings.getJump());
+
+		fLowpassLoessFactory = new LoessSmoother.Builder() //
+				.setWidth(fLowpassSettings.getWidth()) //
+				.setDegree(fLowpassSettings.getDegree()) //
+				.setJump(fLowpassSettings.getJump());
+
+		fCyclicSubSeriesSmoother = new CyclicSubSeriesSmoother.Builder() //
+				.setWidth(seasonalSettings.getWidth()) //
+				.setDegree(seasonalSettings.getDegree()) //
+				.setJump(seasonalSettings.getJump()) //
+				.setDataLength(size) //
+				.setPeriodicity(periodicity).build();
+
 		fDetrend = new double[size];
 		fExtendedSeasonal = new double[size + 2 * fPeriodLength];
-
-		Arrays.fill(fWeights, 1.0);
-	}
-
-	/**
-	 * Construct STL specifying widths and iterations explicitly.
-	 *
-	 * @param data
-	 * @param periodicity
-	 * @param seasonalWidth
-	 * @param trendWidth
-	 * @param ni
-	 * @param no
-	 */
-	@SuppressWarnings("WeakerAccess")
-	public SeasonalTrendLoess(double[] data, int periodicity, int seasonalWidth, int trendWidth, int ni, int no) {
-		this(data, periodicity, ni, no, new LoessSettings(seasonalWidth), new LoessSettings(trendWidth),
-				new LoessSettings(periodicity));
-	}
-
-	/**
-	 * Construct STL specifying seasonal width and iterations. Trend width calculated.
-	 *
-	 * @param data
-	 * @param periodicity
-	 * @param seasonalWidth
-	 * @param ni
-	 * @param no
-	 */
-	public SeasonalTrendLoess(double[] data, int periodicity, int seasonalWidth, int ni, int no) {
-		this(data, periodicity, seasonalWidth, calcDefaultTrendWidth(periodicity, seasonalWidth), ni, no);
-	}
-
-	/**
-	 * Construct STL specifying full settings for the seasonal LOESS, and iterations. Trend width calculated.
-	 *
-	 * @param data
-	 * @param periodicity
-	 * @param seasonalSettings
-	 * @param ni
-	 * @param no
-	 */
-	@SuppressWarnings("WeakerAccess")
-	public SeasonalTrendLoess(double[] data, int periodicity, LoessSettings seasonalSettings, int ni, int no) {
-		this(data, periodicity,
-				ni, no,
-				seasonalSettings,
-				new LoessSettings(calcDefaultTrendWidth(periodicity, seasonalSettings.getWidth())),
-				new LoessSettings(periodicity));
-	}
-
-	/**
-	 * Construct STL specifying periodicity and smoothing widths, with iterations chosen via the robust flag.
-	 *
-	 * @param data
-	 * @param periodicity
-	 * @param seasonalWidth
-	 * @param trendWidth
-	 * @param robust
-	 */
-	@SuppressWarnings("WeakerAccess")
-	public SeasonalTrendLoess(double[] data, int periodicity, int seasonalWidth, int trendWidth, boolean robust) {
-		this(data, periodicity, seasonalWidth, trendWidth, robust ? 1 : 2, robust ? 15 : 0);
-	}
-
-	/**
-	 * Construct STL specifying periodicity and seasonal width. Computes trend-smoothing width. Iterations chosen via
-	 * robust flag.
-	 *
-	 * @param data
-	 * @param periodicity
-	 * @param seasonalWidth
-	 * @param robust
-	 */
-	public SeasonalTrendLoess(double[] data, int periodicity, int seasonalWidth, boolean robust) {
-		this(data, periodicity, seasonalWidth, calcDefaultTrendWidth(periodicity, seasonalWidth), robust);
 	}
 
 	/**
@@ -163,30 +226,30 @@ public class SeasonalTrendLoess {
 	 * <p/>
 	 * Meant for diagnostic purposes only.
 	 *
-	 * @param data
-	 *            the data to analyze
-	 * @param periodicity
-	 *            the (suspected) periodicity of the data
+	 * @param data        the data to analyze
+	 * @param periodicity the (suspected) periodicity of the data
 	 * @return SeasonalTrendLoess object with the decomposition already performed.
 	 */
-	public static SeasonalTrendLoess performPeriodicDecomposition(
+	public static Decomposition performPeriodicDecomposition(
 			double[] data,
-			@SuppressWarnings("SameParameterValue") int periodicity
+			int periodicity
 	) {
 		// The LOESS interpolator with degree 0 and a very long window (arbitrarily chosen to be 100 times the length of
 		// the array) will interpolate all points as the average value of the series. This particular setting is used
 		// for smoothing the seasonal sub-cycles, so the end result is that the seasonal component of the decomposition
 		// is exactly periodic.
-		int width = 100 * data.length;
-		int degree = 0;
-		LoessSettings seasonalSettings = new LoessSettings(width, degree);
 
 		// This fit is for diagnostic purposes, so we just do a single inner iteration.
-		int ni = 1;
-		int no = 0;
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, periodicity, seasonalSettings, ni, no);
-		stl.decompose();
-		return stl;
+
+		SeasonalTrendLoess stl = new SeasonalTrendLoess.Builder()
+				.setPeriodLength(periodicity) //
+				.setSeasonalWidth(100 * data.length) //
+				.setSeasonalDegree(0) //
+				.setInnerIterations(1) //
+				.setRobustnessIterations(0) //
+				.buildSmoother(data);
+
+		return stl.decompose();
 	}
 
 	/**
@@ -194,83 +257,182 @@ public class SeasonalTrendLoess {
 	 * <p/>
 	 * Meant for diagnostic purposes only.
 	 *
-	 * @param data
-	 *            the data to analyze
-	 * @param periodicity
-	 *            the (suspected) periodicity of the data
+	 * @param data        the data to analyze
+	 * @param periodicity the (suspected) periodicity of the data
 	 * @return SeasonalTrendLoess object with the decomposition already performed.
 	 */
-	public static SeasonalTrendLoess performRobustPeriodicDecomposition(
+	public static Decomposition performRobustPeriodicDecomposition(
 			double[] data,
-			@SuppressWarnings("SameParameterValue") int periodicity
+			int periodicity
 	) {
-
 		// The LOESS interpolator with degree 0 and a very long window (arbitrarily chosen to be 100 times the length of
 		// the array) will interpolate all points as the average value of the series. This particular setting is used
 		// for smoothing the seasonal sub-cycles, so the end result is that the seasonal component of the decomposition
 		// is exactly periodic.
-		int width = 100 * data.length;
-		int degree = 0;
-		LoessSettings seasonalSettings = new LoessSettings(width, degree);
 
-		// This fit is for diagnostic purposes, so we just do a single outer iteration.
-		int ni = 1;
-		int no = 1;
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, periodicity, seasonalSettings, ni, no);
-		stl.decompose();
-		return stl;
+		// This fit is for diagnostic purposes, so we just do a single inner and outer iteration.
+
+		SeasonalTrendLoess stl = new SeasonalTrendLoess.Builder()
+				.setPeriodLength(periodicity) //
+				.setSeasonalWidth(100 * data.length) //
+				.setSeasonalDegree(0) //
+				.setInnerIterations(1) //
+				.setRobustnessIterations(1) //
+				.buildSmoother(data);
+
+		return stl.decompose();
 	}
 
-	/**
-	 * Get the data array that was decomposed
-	 *
-	 * @return double[] the original data
-	 */
-	public double[] getData() {
-		return fData;
-	}
+	public static class Decomposition {
 
-	/**
-	 * Get the trend component of the decomposition
-	 *
-	 * @return double[] the trend component
-	 */
-	public double[] getTrend() {
-		return fTrend;
-	}
+		private final double[] fData;
+		private final double[] fTrend;
+		private final double[] fSeasonal;
+		private final double[] fResiduals;
+		private final double[] fWeights;
 
-	/**
-	 * Get the seasonal component of the decomposition
-	 *
-	 * @return double[] the seasonal component
-	 */
-	public double[] getSeasonal() {
-		return fSeasonal;
-	}
+		Decomposition(double[] data) {
+			fData = data;
 
-	/**
-	 * Get the residual remaining after removing the seasonality and trend from the data.
-	 *
-	 * @return double[] the residuals
-	 */
-	public double[] getResiduals() {
-		return fResiduals;
-	}
+			int size = fData.length;
+			fTrend = new double[size];
+			fSeasonal = new double[size];
+			fResiduals = new double[size];
+			fWeights = new double[size];
 
-	/**
-	 * Get the robustness weights used in the calculation. Places where the weights are near zero indicate outliers that
-	 * were effectively ignored during the decomposition. (Only applicable if robustness iterations are performed.)
-	 *
-	 * @return double[] the robustness weights
-	 */
-	public double[] getWeights() {
-		return fWeights;
+			Arrays.fill(fWeights, 1.0);
+		}
+
+		/**
+		 * Get the data array that was decomposed
+		 *
+		 * @return double[] the original data
+		 */
+		public double[] getData() {
+			return fData;
+		}
+
+		/**
+		 * Get the trend component of the decomposition
+		 *
+		 * @return double[] the trend component
+		 */
+		public double[] getTrend() {
+			return fTrend;
+		}
+
+		/**
+		 * Get the seasonal component of the decomposition
+		 *
+		 * @return double[] the seasonal component
+		 */
+		public double[] getSeasonal() {
+			return fSeasonal;
+		}
+
+		/**
+		 * Get the residual remaining after removing the seasonality and trend from the data.
+		 *
+		 * @return double[] the residuals
+		 */
+		public double[] getResiduals() {
+			return fResiduals;
+		}
+
+		/**
+		 * Get the robustness weights used in the calculation. Places where the weights are near zero indicate outliers that
+		 * were effectively ignored during the decomposition. (Only applicable if robustness iterations are performed.)
+		 *
+		 * @return double[] the robustness weights
+		 */
+		public double[] getWeights() {
+			return fWeights;
+		}
+
+		private void updateResiduals() {
+			for (int i = 0; i < fData.length; ++i)
+				fResiduals[i] = fData[i] - fSeasonal[i] - fTrend[i];
+		}
+
+		/**
+		 * Compute the residual-based weights used in the robustness iterations.
+		 */
+		private void computeResidualWeights() {
+
+			// TODO: There can be problems if "robust" iterations are done but MAD ~= 0. May want to put a floor on c001.
+
+			// The residual-based weights are a "bisquare" weight based on the residual deviation compared to 6 times the
+			// median absolute deviation (MAD). First compute 6 * MAD. (The sort could be a selection but this is
+			// not critical as the rest of the algorithm is higher complexity.)
+
+			for (int i = 0; i < fData.length; ++i)
+				fWeights[i] = Math.abs(fData[i] - fSeasonal[i] - fTrend[i]);
+
+			Arrays.sort(fWeights);
+
+			// For an even number of elements, the median is the average of the middle two.
+			// With proper indexing this formula works either way at the cost of some
+			// superfluous work when the number is odd.
+
+			final int mi0 = (fData.length + 1) / 2 - 1; // n = 5, mi0 = 2; n = 4, mi0 = 1
+			final int mi1 = fData.length - mi0 - 1;		// n = 5, mi1 = 2; n = 4, mi1 = 2
+
+			final double sixMad = 3.0 * (fWeights[mi0] + fWeights[mi1]);
+			final double c999 = 0.999 * sixMad;
+			final double c001 = 0.001 * sixMad;
+
+			for (int i = 0; i < fData.length; ++i) {
+				double r = Math.abs(fData[i] - fSeasonal[i] - fTrend[i]);
+				if (r <= c001) {
+					fWeights[i] = 1.0;
+				} else if (r <= c999) {
+					final double h = r / sixMad;
+					final double w = 1.0 - h * h;
+					fWeights[i] = w * w;
+				} else {
+					fWeights[i] = 0.0;
+				}
+			}
+		}
+
+		/**
+		 * Smooth the STL seasonal component with quadratic LOESS and recompute the residual.
+		 *
+		 * @param width
+		 *            the width of the LOESS smoother used to smooth the seasonal component.
+		 */
+		public void smoothSeasonal(int width) {
+			// Quadratic smoothing of the seasonal component.
+			// Do NOT perform linear interpolation between smoothed points - the quadratic spline can accommodate
+			// sharp changes and linear interpolation would cut off peaks/valleys.
+
+			LoessSmoother.Builder builder = new LoessSmoother.Builder().setWidth(width);
+			builder.setDegree(2);
+			builder.setJump(1);
+
+			LoessSmoother seasonalSmoother = builder.setData(fSeasonal).build();
+			double[] smoothedSeasonal = seasonalSmoother.smooth();
+
+			// Update the seasonal with the smoothed values.
+
+			// Restore the end-point values as the smoother will tend to over-modify these.
+
+			double s0 = fSeasonal[0];
+			double sN = fSeasonal[fSeasonal.length - 1];
+			System.arraycopy(smoothedSeasonal, 0, fSeasonal, 0, smoothedSeasonal.length);
+
+			fSeasonal[0] = s0;
+			fSeasonal[fSeasonal.length - 1] = sN;
+
+			for (int i = 0; i < smoothedSeasonal.length; ++i)
+				fResiduals[i] = fData[i] - fTrend[i] - fSeasonal[i];
+		}
 	}
 
 	/**
 	 * Decompose the input data into the seasonal, trend and residual components.
 	 */
-	public void decompose() {
+	public Decomposition decompose() {
 		int outerIteration = 0;
 		while (true) {
 
@@ -285,11 +447,16 @@ public class SeasonalTrendLoess {
 			if (++outerIteration > fRobustIterations)
 				break;
 
-			computeResidualWeights();
+			fDecomposition.computeResidualWeights();
 		}
 
-		for (int i = 0; i < fData.length; ++i)
-			fResiduals[i] = fData[i] - fSeasonal[i] - fTrend[i];
+		fDecomposition.updateResiduals();
+
+		Decomposition result = fDecomposition;
+
+		fDecomposition = null;
+
+		return result;
 	}
 
 	/**
@@ -299,28 +466,7 @@ public class SeasonalTrendLoess {
 	 *            the width of the LOESS smoother used to smooth the seasonal component.
 	 */
 	public void smoothSeasonal(int width) {
-		int degree = 2; // quadratic
-		// Don't use linear interpolation - the quadratic spline can accommodate sharp changes and the linear
-		// interpolation will cut off peaks/valleys.
-		int jump = 1;
-		LoessSettings settings = new LoessSettings(width, degree, jump);
-		LoessSmoother seasonalSmoother = new LoessSmoother(settings, fSeasonal, null);
-		double[] smoothedSeasonal = seasonalSmoother.smooth();
-
-		// Update the seasonal with the smoothed values.
-
-		// Restore the end-point values as the smoother will tend to over-modify these.
-
-		double s0 = fSeasonal[0];
-		double sN = fSeasonal[fSeasonal.length - 1];
-		System.arraycopy(smoothedSeasonal, 0, fSeasonal, 0, smoothedSeasonal.length);
-
-		fSeasonal[0] = s0;
-		fSeasonal[fSeasonal.length - 1] = sN;
-
-		for (int i = 0; i < smoothedSeasonal.length; ++i)
-			fResiduals[i] = fData[i] - fTrend[i] - fSeasonal[i];
-
+		fDecomposition.smoothSeasonal(width);
 	}
 
 	/**
@@ -331,12 +477,16 @@ public class SeasonalTrendLoess {
 	 */
 	private void smoothSeasonalSubCycles(boolean useResidualWeights) {
 
-		for (int i = 0; i < fData.length; ++i)
-			fDetrend[i] = fData[i] - fTrend[i];
+		double[] data = fDecomposition.fData;
+		double[] trend = fDecomposition.fTrend;
+		double[] weights = fDecomposition.fWeights;
 
-		double[] residualWeights = useResidualWeights ? fWeights : null;
+		for (int i = 0; i < data.length; ++i)
+			fDetrend[i] = data[i] - trend[i];
 
-		cyclicSubSeries.smoothSeasonal(fDetrend, fExtendedSeasonal, residualWeights);
+		double[] residualWeights = useResidualWeights ? weights : null;
+
+		fCyclicSubSeriesSmoother.smoothSeasonal(fDetrend, fExtendedSeasonal, residualWeights);
 	}
 
 	/**
@@ -358,7 +508,7 @@ public class SeasonalTrendLoess {
 
 		// assert pass3.length == fData.length; // testing sanity check.
 
-		LoessSmoother lowPassLoess = new LoessSmoother(fLowpassSettings, pass3, null);
+		LoessSmoother lowPassLoess = fLowpassLoessFactory.setData(pass3).build();
 		fDeSeasonalized = lowPassLoess.smooth();
 
 		// dumpDebugData("lowpass", lowpass);
@@ -370,61 +520,26 @@ public class SeasonalTrendLoess {
 	 */
 	private void updateSeasonalAndTrend(boolean useResidualWeights) {
 
-		for (int i = 0; i < fData.length; ++i) {
-			fSeasonal[i] = fExtendedSeasonal[fPeriodLength + i] - fDeSeasonalized[i];
-			fTrend[i] = fData[i] - fSeasonal[i];
+		double[] data = fDecomposition.fData;
+		double[] trend = fDecomposition.fTrend;
+		double[] weights = fDecomposition.fWeights;
+		double[] seasonal = fDecomposition.fSeasonal;
+
+		for (int i = 0; i < data.length; ++i) {
+			seasonal[i] = fExtendedSeasonal[fPeriodLength + i] - fDeSeasonalized[i];
+			trend[i] = data[i] - seasonal[i];
 		}
 
 		// dumpDebugData("seasonal", seasonal);
 		// dumpDebugData("trend0", trend);
 
-		double[] residualWeights = useResidualWeights ? fWeights : null;
-		LoessSmoother trendSmoother = new LoessSmoother(fTrendSettings, fTrend, residualWeights);
+		double[] residualWeights = useResidualWeights ? weights : null;
 
-		System.arraycopy(trendSmoother.smooth(), 0, fTrend, 0, fTrend.length);
+		LoessSmoother trendSmoother = fLoessSmootherFactory.setData(trend).setExternalWeights(residualWeights).build();
+
+		System.arraycopy(trendSmoother.smooth(), 0, trend, 0, trend.length);
 
 		// dumpDebugData("trend", trend);
-	}
-
-	/**
-	 * Compute the residual-based weights used in the robustness iterations.
-	 */
-	private void computeResidualWeights() {
-
-		// TODO: There can be problems if "robust" iterations are done but MAD ~= 0. May want to put a floor on c001.
-
-		// The residual-based weights are a "bisquare" weight based on the residual deviation compared to 6 times the
-		// median absolute deviation (MAD). First compute 6 * MAD. (The sort could be a selection but this is
-		// not critical as the rest of the algorithm is higher complexity.)
-
-		for (int i = 0; i < fData.length; ++i)
-			fWeights[i] = Math.abs(fData[i] - fSeasonal[i] - fTrend[i]);
-
-		Arrays.sort(fWeights);
-
-		// For an even number of elements, the median is the average of the middle two.
-		// With proper indexing this formula works either way at the cost of some
-		// superfluous work when the number is odd.
-
-		final int mi0 = (fData.length + 1) / 2 - 1; // n = 5, mi0 = 2; n = 4, mi0 = 1
-		final int mi1 = fData.length - mi0 - 1;		// n = 5, mi1 = 2; n = 4, mi1 = 2
-
-		final double sixMad = 3.0 * (fWeights[mi0] + fWeights[mi1]);
-		final double c999 = 0.999 * sixMad;
-		final double c001 = 0.001 * sixMad;
-
-		for (int i = 0; i < fData.length; ++i) {
-			double r = Math.abs(fData[i] - fSeasonal[i] - fTrend[i]);
-			if (r <= c001) {
-				fWeights[i] = 1.0;
-			} else if (r <= c999) {
-				final double h = r / sixMad;
-				final double w = 1.0 - h * h;
-				fWeights[i] = w * w;
-			} else {
-				fWeights[i] = 0.0;
-			}
-		}
 	}
 
 	@Override

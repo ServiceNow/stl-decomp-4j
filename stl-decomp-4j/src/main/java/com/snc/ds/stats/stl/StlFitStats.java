@@ -27,7 +27,7 @@ public class StlFitStats {
 	 *
 	 * @param stl a SeasonalTrendLoess object after the decomposition is performed
 	 */
-	public StlFitStats(SeasonalTrendLoess stl) {
+	public StlFitStats(SeasonalTrendLoess.Decomposition stl) {
 		int length = stl.getData().length;
 		// Unnecessary since STL guarantees this, so it can't be tested:
 		// Preconditions.checkArgument(length >= 4, "STL Decomposition must have at least 4 data points");

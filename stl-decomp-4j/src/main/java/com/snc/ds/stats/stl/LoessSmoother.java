@@ -16,6 +16,47 @@ public class LoessSmoother {
 	private final int fJump;
 	private final double[] fSmoothed;
 
+	public static class Builder {
+		private int fWidth;
+		private int fDegree = 1;
+		private int fJump = 1;
+		private double[] fExternalWeights = null;
+		private double[] fData = null;
+
+		public Builder setWidth(int width) {
+			fWidth = width;
+			return this;
+		}
+
+		Builder setDegree(int degree) {
+			if (degree < 0 || degree > 2)
+				throw new IllegalArgumentException("Degree must be 0, 1 or 2");
+
+			fDegree = degree;
+			return this;
+		}
+
+		Builder setJump(int jump) {
+			fJump = jump;
+			return this;
+		}
+
+		Builder setExternalWeights(double[] weights) {
+			fExternalWeights = weights;
+			return this;
+
+		}
+
+		Builder setData(double[] data) {
+			fData = data;
+			return this;
+		}
+
+		LoessSmoother build() {
+			return new LoessSmoother(fWidth, fJump, fDegree, fData, fExternalWeights);
+		}
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 	// Interface
 	// -----------------------------------------------------------------------------------------------------------------
@@ -35,27 +76,13 @@ public class LoessSmoother {
 	 * @param externalWeights
 	 *            double[] additional weights to apply in the smoothing. Ignored if null.
 	 */
-	public LoessSmoother(int width, int jump, int degree, double[] data, double[] externalWeights) {
+	private LoessSmoother(int width, int jump, int degree, double[] data, double[] externalWeights) {
 		final LoessInterpolator.Builder b = new LoessInterpolator.Builder();
 		this.fInterpolator = b.setWidth(width).setDegree(degree).setExternalWeights(externalWeights).interpolate(data);
 		this.fData = data;
 		this.fJump = Math.min(jump, data.length - 1);
 		this.fWidth = width;
 		this.fSmoothed = new double[data.length];
-	}
-
-	/**
-	 * Create a LoessSmoother taking settings from LoessSettings.
-	 *
-	 * @param settings
-	 *            LoessSettings settings object specifying width, degree and jump.
-	 * @param data
-	 *            double[] underlying data set that is being smoothed
-	 * @param externalWeights
-	 *            double[] additional weights to apply in the smoothing. Ignored if null.
-	 */
-	public LoessSmoother(LoessSettings settings, double[] data, double[] externalWeights) {
-		this(settings.getWidth(), settings.getJump(), settings.getDegree(), data, externalWeights);
 	}
 
 	/**

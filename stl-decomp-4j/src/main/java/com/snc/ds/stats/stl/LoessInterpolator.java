@@ -22,7 +22,7 @@ abstract class LoessInterpolator {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
-	 * class LoessInterpolator.Builder - Builder for LoessInterpolator classes
+	 * class LoessInterpolator.Builder - Factory for LoessInterpolator objects
 	 * <p>
 	 * Use a Builder pattern to support default arguments and eliminate the multiplicity of same-typed arguments.
 	 */

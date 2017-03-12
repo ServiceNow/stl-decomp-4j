@@ -8,6 +8,9 @@ import java.io.IOException;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.junit.Test;
 
+import com.snc.ds.stats.stl.SeasonalTrendLoess.Builder;
+import com.snc.ds.stats.stl.SeasonalTrendLoess.Decomposition;
+
 /**
  * Unit test for StlFitStats
  *
@@ -21,9 +24,12 @@ public class StlFitStatsTest {
 	public void StlStatsSanityTest() {
 
 		int periodicity = 168;
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(testDataGenerator.values, periodicity, 2001, 1, 15);
+		Builder builder = new Builder().setPeriodLength(periodicity).setSeasonalWidth(2001);
+		builder.setInnerIterations(1).setRobustnessIterations(15);
 
-		stl.decompose();
+		SeasonalTrendLoess smoother = builder.buildSmoother(testDataGenerator.values);
+
+		Decomposition stl = smoother.decompose();
 
 		StlFitStats stats = new StlFitStats(stl);
 
@@ -86,9 +92,10 @@ public class StlFitStatsTest {
 
 		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.0, 0.0, seed); // sin(2 \pi i / 12)
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, false);
+		final Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setNonRobust();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
 
-		stl.decompose();
+		Decomposition stl = smoother.decompose();
 
 		StlFitStats stats = new StlFitStats(stl);
 
@@ -126,9 +133,10 @@ public class StlFitStatsTest {
 		// linear trend (2 \pi i / 12)
 		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 0.0, 1.0, 0.0, seed);
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, false);
+		final Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setNonRobust();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
 
-		stl.decompose();
+		Decomposition stl = smoother.decompose();
 
 		StlFitStats stats = new StlFitStats(stl);
 
@@ -168,7 +176,7 @@ public class StlFitStatsTest {
 		for (int i = 0; i < trials; ++i) {
 			double[] data = testDataGenerator.createNoisySeasonalData(168 * 4, 168, 0.0, 0.2, 1.0, seed++);
 
-			SeasonalTrendLoess stl = SeasonalTrendLoess.performPeriodicDecomposition(data, 168);
+			Decomposition stl = SeasonalTrendLoess.performPeriodicDecomposition(data, 168);
 
 			StlFitStats stats = new StlFitStats(stl);
 
@@ -220,7 +228,7 @@ public class StlFitStatsTest {
 				double[] data = testDataGenerator.createNoisySeasonalData(
 						168 * 4, 168, seasonalAmplitude, 0.0, noiseSigma, seed++);
 
-				SeasonalTrendLoess stl = SeasonalTrendLoess.performRobustPeriodicDecomposition(data, 168);
+				Decomposition stl = SeasonalTrendLoess.performRobustPeriodicDecomposition(data, 168);
 
 				StlFitStats stats = new StlFitStats(stl);
 
@@ -266,7 +274,7 @@ public class StlFitStatsTest {
 
 		double[] data = testDataGenerator.createNoisySeasonalData(168 * 4, 168, 0.0, 0.2, 1.0, 16951029831410L);
 
-		SeasonalTrendLoess stl = SeasonalTrendLoess.performRobustPeriodicDecomposition(data, 168);
+		Decomposition stl = SeasonalTrendLoess.performRobustPeriodicDecomposition(data, 168);
 
 		StlFitStats stats = new StlFitStats(stl);
 

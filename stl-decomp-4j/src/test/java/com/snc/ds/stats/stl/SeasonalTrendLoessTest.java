@@ -1,5 +1,6 @@
 package com.snc.ds.stats.stl;
 
+import static com.snc.ds.stats.stl.SeasonalTrendLoess.*;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
@@ -24,9 +25,10 @@ public class SeasonalTrendLoessTest {
 
 		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.0, 0.0, seed);
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, false);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setNonRobust();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
 
-		stl.decompose();
+		Decomposition stl = smoother.decompose();
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
@@ -46,9 +48,10 @@ public class SeasonalTrendLoessTest {
 
 		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 0.0, 1.0, 0.0, seed);
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, false);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setNonRobust();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
 
-		stl.decompose();
+		Decomposition stl = smoother.decompose();
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
@@ -68,9 +71,10 @@ public class SeasonalTrendLoessTest {
 
 		double[] data = testDataGenerator.createSquareWaveData();
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 288, 13, false);
+		Builder builder = new Builder().setPeriodLength(288).setSeasonalWidth(13).setNonRobust();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
 
-		stl.decompose();
+		Decomposition stl = smoother.decompose();
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
@@ -95,9 +99,11 @@ public class SeasonalTrendLoessTest {
 			data[i] = fNonRobustNoisySinusoidResults[i][0];
 		}
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, 2, 0);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7);
+		builder.setInnerIterations(2).setRobustnessIterations(0); // Should be the same as setNonRobust()
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
 
-		stl.decompose();
+		Decomposition stl = smoother.decompose();
 
 		//dumpStlResultsToFile(data, stl, "/tmp/stl_non_robust_test.csv");
 
@@ -125,12 +131,16 @@ public class SeasonalTrendLoessTest {
 		for (int i = 0; i < data.length; ++i) {
 			data[i] = fNonRobustNoisySinusoidResults[i][0];
 		}
-		LoessSettings seasonalSettings = new LoessSettings(100000001, 0, 100000001);
-		LoessSettings trendSettings = new LoessSettings(23);
-		LoessSettings lowPassSettings = new LoessSettings(13);
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 2, 0, seasonalSettings, trendSettings, lowPassSettings);
 
-		stl.decompose();
+		Builder builder = new Builder().setPeriodLength(12);
+		builder.setSeasonalWidth(100000001).setSeasonalDegree(0).setSeasonalJump(100000001); // Force periodic by hand
+		builder.setTrendWidth(23);
+		builder.setLowpassWidth(13);
+		builder.setInnerIterations(2).setRobustnessIterations(0);
+
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		Decomposition stl = smoother.decompose();
 
 		double epsilon = 0.0; // Doing absolute differences and some values > 10
 
@@ -151,9 +161,11 @@ public class SeasonalTrendLoessTest {
 		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.0, 0.0, seed);
 		data[100] = 1000;
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 1000000, true);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(1000000).setRobust();
 
-		stl.decompose();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		Decomposition stl = smoother.decompose();
 
 		// printStlResults(data, stl);
 
@@ -186,9 +198,12 @@ public class SeasonalTrendLoessTest {
 			data[i] = fRobustNoisySinusoidResults[i][0];
 		}
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, 1, 1);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7);
+		builder.setInnerIterations(1).setRobustnessIterations(1);
 
-		stl.decompose();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		Decomposition stl = smoother.decompose();
 
 		// TODO: The differences here are larger than I had expected. They're quite small but significantly larger than
 		// machine epsilon, and looking at the difference between the seasonality from Java and Python/Fortran shows
@@ -208,16 +223,15 @@ public class SeasonalTrendLoessTest {
 		}
 	}
 
-	@Test(expected=RuntimeException.class)
+	@Test(expected=IllegalArgumentException.class)
 	public void periodicityMustBeAtLeastTwo() {
-		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.0, 0.0, 123L);
-		new SeasonalTrendLoess(data, 1, 1000000, false);
+		new Builder().setPeriodLength(1);
 	}
 
-	@Test(expected=RuntimeException.class)
+	@Test(expected=IllegalArgumentException.class)
 	public void dataMustHaveAtLeastTwoPeriods() {
 		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.0, 0.0, 123L);
-		new SeasonalTrendLoess(data, 120, 1000000, false);
+		new SeasonalTrendLoess.Builder().setPeriodLength(120).setSeasonalWidth(999).setNonRobust().buildSmoother(data);
 	}
 
 	@Ignore("For manual testing only")
@@ -226,9 +240,11 @@ public class SeasonalTrendLoessTest {
 
 		double[] data = testDataGenerator.createNoisySeasonalDataWithTimeSeed(144, 12, 0.0, 0.0, 1.0);
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, true);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setRobust();
 
-		stl.decompose();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		Decomposition stl = smoother.decompose();
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
@@ -290,9 +306,11 @@ public class SeasonalTrendLoessTest {
 
 		double[] data = testDataGenerator.createNoisySeasonalDataWithTimeSeed(144, 12, 10.0, 1.0, 2.0);
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, false);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setNonRobust();
 
-		stl.decompose();
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		Decomposition stl = smoother.decompose();
 
 		double[] residuals = stl.getResiduals();
 
@@ -316,7 +334,9 @@ public class SeasonalTrendLoessTest {
 	public void toStringTest() {
 		double[] data = testDataGenerator.createNoisySeasonalDataWithTimeSeed(144, 12, 10.0, 1.0, 2.0);
 
-		SeasonalTrendLoess stl = new SeasonalTrendLoess(data, 12, 7, false);
+		Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setNonRobust();
+
+		SeasonalTrendLoess stl = builder.buildSmoother(data);
 
 		assertEquals(
 				"SeasonalTrendLoess: [\n" +
@@ -329,7 +349,7 @@ public class SeasonalTrendLoessTest {
 	}
 
 	@SuppressWarnings("unused")
-	private void printStlResults(double[] data, SeasonalTrendLoess stl) {
+	private void printStlResults(double[] data, Decomposition stl) {
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
 		double[] residuals = stl.getResiduals();
