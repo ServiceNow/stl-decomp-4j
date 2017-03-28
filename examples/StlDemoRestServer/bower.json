@@ -1,0 +1,21 @@
+{
+  "name": "stl-demo",
+  "homepage": "https://github.com/ServiceNow/stl-decomp-4j",
+  "authors": [
+    "Jim Crotinger <jim.crotinger@servicenow.com>"
+  ],
+  "description": "STL Decomposition Toy",
+  "main": "index.html",
+  "license": "Apache 2.0",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "rickshaw": "^1.6.0"
+  }
+}

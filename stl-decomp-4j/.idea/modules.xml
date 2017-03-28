@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../examples/StlDemoRestServer/StlDemoRestServer.iml" filepath="$PROJECT_DIR$/../examples/StlDemoRestServer/StlDemoRestServer.iml" />
       <module fileurl="file://$PROJECT_DIR$/stl-decomp-4j.iml" filepath="$PROJECT_DIR$/stl-decomp-4j.iml" />
     </modules>
   </component>

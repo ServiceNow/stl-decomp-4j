@@ -1,3 +1,4 @@
+target
 *.class
 
 # Mobile Tools for Java (J2ME)
@@ -12,5 +13,9 @@
 workspace.xml
 tasks.xml
 
+# Maven files - we reload the pom so these will be regenerated
+*/.idea/**/libraries
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+

@@ -7,10 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="stl-decomp-4j" />
+        <module name="StlDemoRestServer" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="stl-decomp-4j" target="1.5" />
+    <bytecodeTargetLevel target="1.8">
+      <module name="stl-decomp-4j" target="1.8" />
+      <module name="StlDemoRestServer" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
