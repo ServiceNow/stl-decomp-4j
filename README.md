@@ -20,4 +20,4 @@ SeasonalTrendLoess.Decomposition stl = smoother.decompose();
 
 The `examples/StlDemoRestServer` directory includes a copy of the [Monthly CO_2 Measurement Data](http://www.esrl.noaa.gov/gmd/ccgg/trends/) and a simple REST server that reads this data, performs an STL decomposition on the data, and serves up the results to http://localhost:4567/stldemo. The `index.html` file in that directory will load data from this endpoint and plot the resulting decomposition.
 
-![CO2 Plot](examples/StlDemoRestServer/co2_stl_figure.jpg)
+![CO2 Plot](examples/StlDemoRestServer/co2_stl_highchart.jpg)

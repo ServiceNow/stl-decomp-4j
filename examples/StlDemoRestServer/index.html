@@ -1,149 +1,29 @@
 <!doctype html>
-    <link type="text/css" rel="stylesheet" href="./bower_components/rickshaw/rickshaw.min.css">
-    <script src="./bower_components/d3/d3.min.js"></script>
-    <script src="./bower_components/rickshaw/rickshaw.min.js"></script>
+<script src="./bower_components/jquery/dist/jquery.min.js"></script>
+<script src="./bower_components/highcharts/highcharts.js"></script>
+<script src="./bower_components/highcharts/js/themes/grid-light.js"></script>
 
-    <style>
-      #chart_container {
-        position: relative;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      #chart {
-	position: relative;
-	left: 40px;
-      }
-      #y_axis {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 40px;
-      }
-      #x_axis {
-        position: relative;
-        top: 0;
-        bottom: 0;
-        height: 40px;
-      }
-      #seasonal_chart_container {
-        position: relative;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      #seasonal_chart{
-	position: relative;
-	left: 40px;
-      }
-      #seasonal_chart_y {
-        position: absolute;
-        top: 0;
-	bottom: 0;
-        width: 40px;
-      }
-      #seasonal_chart_x {
-        position: relative;
-        top: 0;
-        bottom: 0;
-        height: 20px;
-      }
-    
-      #trend_chart_container {
-        position: relative;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      #trend_chart{
-	position: relative;
-	left: 40px;
-      }
-      #trend_chart_y {
-        position: absolute;
-        top: 0;
-	bottom: 0;
-        width: 40px;
-      }
-      #trend_chart_x {
-        position: relative;
-        top: 0;
-        bottom: 0;
-        height: 20px;
-      }
+<style>
+.chart {
+    height: 400px;
+    width: 1200px;
+    margin: auto;
+}
 
-      #residual_chart_container {
-        position: relative;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      #residual_chart{
-	position: relative;
-	left: 40px;
-      }
-      #residual_chart_y {
-        position: absolute;
-        top: 0;
-	bottom: 0;
-        width: 40px;
-      }
-      #residual_chart_x {
-        position: relative;
-        top: 0;
-        bottom: 0;
-        height: 40px;
-      }
-    
+.spacer {
+    height: 20px;
+}
+</style>
 
-    </style>
+<div id="data_trend_chart" class="chart"></div>
+<div class="spacer"></div>
+<div id="seasonal_chart" class="chart"></div>
+<div class="spacer"></div>
+<div id="residual_chart" class="chart"></div>
 
-    <div id="chart_container">
-        <div id="y_axis"></div>
-        <div id="chart"></div>
-        <div id="x_axis"></div>
-    </div>
-
-    <div id="seasonal_chart_container">
-      <div id="seasonal_chart_y"></div>
-      <div id="seasonal_chart"></div>
-      <div id="seasonal_chart_x"></div>
-    </div>
-    
-    <div id="trend_chart_container">
-      <div id="trend_chart_y"></div>
-      <div id="trend_chart"></div>
-      <div id="trend_chart_x"></div>
-    </div>
-    
-    <div id="residual_chart_container">
-      <div id="residual_chart_y"></div>
-      <div id="residual_chart"></div>
-      <div id="residual_chart_x"></div>
-    </div>
-    
 <script>
 
-// function createCORSRequest(method, url) {
-//     var xhr = new XMLHttpRequest();
-//     if ("withCredentials" in xhr) {
-
-// 	// Check if the XMLHttpRequest object has a "withCredentials" property.
-// 	// "withCredentials" only exists on XMLHTTPRequest2 objects.
-// 	xhr.open(method, url, true);
-
-//     } else if (typeof XDomainRequest != "undefined") {
-
-// 	// Otherwise, check if XDomainRequest.
-// 	// XDomainRequest only exists in IE, and is IE's way of making CORS requests.
-// 	xhr = new XDomainRequest();
-// 	xhr.open(method, url);
-
-//     } else {
-
-// 	// Otherwise, CORS is not supported by the browser.
-// 	xhr = null;
-
-//     }
-//     return xhr;
-// }
-
-// var xhr = createCORSRequest('GET', "http://localhost:4567/stldemo");
-// if (!xhr) {
-//     throw new Error('CORS not supported');
-// }
+// Get data from our local Spark REST server
 
 var xhttp = new XMLHttpRequest();
 xhttp.open("GET", "http://localhost:4567/stldemo", false);
@@ -151,160 +31,119 @@ xhttp.setRequestHeader("Content-type", "application/json");
 xhttp.send();
 var response = JSON.parse(xhttp.responseText);
 
-//document.getElementById("my_output").innerHTML = xhttp.responseText;
-
 value = []
 seasonal = []
 trend = []
 residual = []
 for (var i = 0; i < response.value.length; ++i) {
-    var time = response.time[i] / 1000;
-    var v = response.value[i];
-    var s = response.seasonal[i];
-    var t = response.trend[i];
-    var r = response.residual[i];
-    value.push({ x: time, y: v });
-    seasonal.push({ x: time, y: s });
-    trend.push({x: time, y: t });
-    residual.push({x: time, y: r });
+    var time = response.time[i];
+    var v = [time, response.value[i]];
+    var s = [time, response.seasonal[i]];
+    var t = [time, response.trend[i]];
+    var r = [time, response.residual[i]];
+    value.push(v);
+    seasonal.push(s);
+    trend.push(t);
+    residual.push(r);
 }
 
-var graph = new Rickshaw.Graph( {
-    element: document.querySelector("#chart"), 
-    width: 1200, 
-    height: 400,
-    min: 300,
-    max: 420,
-    xScale: d3.time.scale(),
-    yScale: d3.scale.linear(),
-    renderer: 'line',
-    //    ticks: 10,
-    series: [{
-        color: 'steelblue',
-        data: value
-    }]
+// Plot with highcharts
+
+$(function () {
+    $('#data_trend_chart').highcharts({
+        title: {
+	    useHTML: true,
+            text: 'CO<sub>2</sub> Levels'
+        },
+	xAxis: {
+	    type: 'datetime'
+        },
+        yAxis: {
+            title: {
+                text: null
+            }
+        },
+	legend: {
+            align: 'right',
+            verticalAlign: 'top',
+            layout: 'vertical',
+            x: 0,
+            y: 100
+	},
+	tooltip: {
+            crosshairs: true,
+            shared: true,
+            valueSuffix: ' ppm'
+	},
+        series: [{
+            name: 'Data',
+            data: value
+        }, {
+            name: 'Trend',
+            data: trend
+        }],
+    });
+
+    $('#seasonal_chart').highcharts({
+	title: {
+	    text: null
+	},
+	xAxis: {
+	    type: 'datetime'
+        },
+        yAxis: {
+            title: {
+                text: null
+            }
+        },
+	legend: {
+            align: 'right',
+            verticalAlign: 'top',
+            layout: 'vertical',
+            x: 0,
+            y: 100
+	},
+	tooltip: {
+            crosshairs: true,
+            shared: true,
+            valueSuffix: ' ppm'
+	},
+        series: [{
+            name: 'Seasonal',
+            data: seasonal
+        }],
+    });
+
+    $('#residual_chart').highcharts({
+	title: {
+	    text: null
+	},
+	xAxis: {
+	    type: 'datetime'
+        },
+        yAxis: {
+            title: {
+                text: null
+            }
+        },
+	legend: {
+            align: 'right',
+            verticalAlign: 'top',
+            layout: 'vertical',
+            x: 0,
+            y: 100
+	},
+	tooltip: {
+            crosshairs: true,
+            shared: true,
+            valueSuffix: ' ppm'
+	},
+        series: [{
+            name: 'Residual',
+            data: residual
+        }],
+    });
 });
-
-new Rickshaw.Graph.Axis.Y( {
-    graph: graph,
-    orientation: 'left',
-    tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-    element: document.getElementById('y_axis')
-} ); 
-
-var time = new Rickshaw.Fixtures.Time();
-var years = time.unit('5 year');
-
-new Rickshaw.Graph.Axis.Time({
-    graph: graph,
-    orientation: 'bottom',
-    //    timeFixture: new Rickshaw.Fixtures.Time.Local()
-    timeUnit: years,
-    element: document.getElementById('x_axis')
-});
-
-var seasonal_graph = new Rickshaw.Graph( {
-    element: document.querySelector("#seasonal_chart"), 
-    width: 1200, 
-    height: 200,
-    min: -5,
-    max: 5,
-    xScale: d3.time.scale(),
-    yScale: d3.scale.linear(),
-    renderer: 'line',
-    //    ticks: 10,
-    series: [{
-        color: 'steelblue',
-        data: seasonal
-    }]
-});
-
-new Rickshaw.Graph.Axis.Y( {
-    graph: seasonal_graph,
-    orientation: 'left',
-    tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-    element: document.getElementById('seasonal_chart_y')
-} ); 
-
-// new Rickshaw.Graph.Axis.Time({
-//     graph: seasonal_graph,
-//     orientation: 'bottom',
-//     timeUnit: years,
-//     element: document.getElementById('seasonal_chart_x')
-// });
-
-var trend_graph = new Rickshaw.Graph( {
-    element: document.querySelector("#trend_chart"), 
-    width: 1200, 
-    height: 200,
-    min: 300,
-    max: 420,
-    xScale: d3.time.scale(),
-    yScale: d3.scale.linear(),
-    renderer: 'line',
-    //    ticks: 10,
-    series: [{
-        color: 'steelblue',
-        data: trend
-    }]
-});
-
-new Rickshaw.Graph.Axis.Y( {
-    graph: trend_graph,
-    orientation: 'left',
-    tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-    element: document.getElementById('trend_chart_y')
-} ); 
-
-// new Rickshaw.Graph.Axis.Time({
-//     graph: trend_graph,
-//     orientation: 'bottom',
-//     timeUnit: years,
-//     element: document.getElementById('trend_chart_x')
-// });
-
-var residual_graph = new Rickshaw.Graph( {
-    element: document.querySelector("#residual_chart"), 
-    width: 1200, 
-    height: 200,
-    min: -1,
-    max: 1,
-    xScale: d3.time.scale(),
-    yScale: d3.scale.linear(),
-    renderer: 'line',
-    //    ticks: 10,
-    series: [{
-        color: 'steelblue',
-        data: residual
-    }]
-});
-
-new Rickshaw.Graph.Axis.Y( {
-    graph: residual_graph,
-    orientation: 'left',
-    tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-    element: document.getElementById('residual_chart_y')
-} ); 
-
-new Rickshaw.Graph.Axis.Time({
-    graph: residual_graph,
-    orientation: 'bottom',
-    timeUnit: years,
-    element: document.getElementById('residual_chart_x')
-});
-
-
-// xAxis.render();
-// xAxis2.render();
-
-graph.render();
-seasonal_graph.render();
-trend_graph.render();
-residual_graph.render();
-
-// var slider = new Rickshaw.Graph.RangeSlider.Preview({
-// 	graph: graph,
-// 	element: document.getElementById('slider')
-// });
 
 </script>
+    

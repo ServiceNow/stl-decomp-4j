@@ -16,6 +16,7 @@
     "tests"
   ],
   "dependencies": {
-    "rickshaw": "^1.6.0"
+    "highcharts": "^5.0.9",
+    "jquery": "^3.2.1"
   }
 }
