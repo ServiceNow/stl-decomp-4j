@@ -1,8 +1,6 @@
 # stl-decomp-4j
 
-stl-decomp-4j is a Java implementation of the seasonal-trend decomposition algorithm described in [STL: A Seasonal-Trend Decomposition Procedure Based on Loess](http://www.wessa.net/download/stl.pdf). 
-
-This is a Java port of the original Ratfor/Fortran available from [Netlib](http://netlib.org) ([original source here](http://netlib.org/a/stl)), with an extension to support local quadratic interpolation (in addition to the standard flat and linear local interpolation).
+stl-decomp-4j implements the seasonal-trend decomposition algorithm described in [STL: A Seasonal-Trend Decomposition Procedure Based on Loess](http://www.wessa.net/download/stl.pdf). This is a Java port of the original Ratfor/Fortran available from [Netlib](http://netlib.org) ([original source here](http://netlib.org/a/stl)), with an extension to support local quadratic interpolation (in addition to the standard flat and linear local interpolation).
 
 As with the original Fortran version, this version of the STL algorithm expects equally spaced data with no missing values.
 
