@@ -1,7 +1,5 @@
 # Seasonal Decomposition of Time Series by Loess
 
-[![][license img]][license]
-
 The Seasonal-Trend-Loess (STL) algorithm decomposes a time series into seasonal, trend and residual components. The algorithm uses Loess interpolation to smooth the cyclic sub-series (e.g. all January values in the CO<sub>2</sub> data). After removing the seasonality from the signal, the remainder is smoothed (in multiple steps) to find the trend. This process is interated and may include robustness iterations that take advantage of the weighted-least-squares underpinnings of Loess to remove the effects of outliers. The details are described in [STL: A Seasonal-Trend Decomposition Procedure Based on Loess](http://www.wessa.net/download/stl.pdf).   
 
 stl-decomp-4j is a Java port of the original Ratfor/Fortran available from [Netlib](http://netlib.org) ([original source here](http://netlib.org/a/stl)), with an extension to support local quadratic interpolation.   
@@ -31,5 +29,3 @@ The `examples/StlDemoRestServer` directory includes a copy of the [Monthly CO<su
 At a minimum, the STL algorithm requires specifying the periodicity of the data (e.g. 12 for monthly) and the width of the Loess smoother used to smooth the cyclic seasonal sub-series. In general, there are three Loess smoothers that each require three parameters --- a width, a degree, and a jump. The width specifies the number of data points that the local interpolation uses to smooth each point, the degree specifies the degree of the local polynomial that is fit to the data, and the jump specifies how many points are skipped between Loess interpolations, with linear interpolation being done between these points. Because of this complexity, construction is done via Builder objects, as shown in the simple example above.
 
 ![CO2 Plot](examples/StlDemoRestServer/co2_stl_highchart.jpg)
-[license]:LICENSE-2.0.txt
-[license img]:https://img.shields.io/badge/License-Apache%202-blue.svg
