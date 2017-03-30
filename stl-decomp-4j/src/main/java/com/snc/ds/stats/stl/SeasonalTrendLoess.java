@@ -229,7 +229,7 @@ public class SeasonalTrendLoess {
 
 	/**
 	 * Factory method to perform a non-robust STL decomposition enforcing strict periodicity.
-	 * <p/>
+	 *
 	 * Meant for diagnostic purposes only.
 	 *
 	 * @param data        the data to analyze
@@ -260,7 +260,7 @@ public class SeasonalTrendLoess {
 
 	/**
 	 * Factory method to perform a (somewhat) robust STL decomposition enforcing strict periodicity.
-	 * <p/>
+	 *
 	 * Meant for diagnostic purposes only.
 	 *
 	 * @param data        the data to analyze
@@ -437,6 +437,8 @@ public class SeasonalTrendLoess {
 
 	/**
 	 * Decompose the input data into the seasonal, trend and residual components.
+	 *
+	 * @return the STL decomposition
 	 */
 	public Decomposition decompose() {
 		int outerIteration = 0;

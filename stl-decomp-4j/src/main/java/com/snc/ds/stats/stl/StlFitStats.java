@@ -271,6 +271,8 @@ public class StlFitStats {
 
 	/**
 	 * Get a Z-Score for the residual variance with no trend relative to the statistics from the STL residual.
+	 *
+	 * @return the 'trend Z-Score'
 	 */
 	public double getTrendinessZScore() {
 		double resVarVar = getEstimatedVarianceOfResidualSampleVariance();
@@ -280,6 +282,8 @@ public class StlFitStats {
 
 	/**
 	 * Get a Z-Score for the residual variance with no seasonality relative to the statistics from the STL residual.
+	 *
+	 * @return the 'seasonal Z-Score'
 	 */
 	public double getSeasonalZScore() {
 		double resVarVar = getEstimatedVarianceOfResidualSampleVariance();
