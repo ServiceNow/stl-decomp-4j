@@ -35,7 +35,7 @@ public class StlFitStats {
 		final double[] data = stl.getData();
 		final double[] trend = stl.getTrend();
 		final double[] seasonal = stl.getSeasonal();
-		final double[] residuals = stl.getResiduals();
+		final double[] residuals = stl.getResidual();
 
 		double dataSum = 0.0;
 		double dataSqSum = 0.0;

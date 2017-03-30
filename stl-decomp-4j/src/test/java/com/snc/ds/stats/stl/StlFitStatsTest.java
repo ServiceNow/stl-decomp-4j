@@ -44,7 +44,7 @@ public class StlFitStatsTest {
 			dataStats.addValue(stl.getData()[i]);
 			trendStats.addValue(stl.getTrend()[i]);
 			seasonalStats.addValue(stl.getSeasonal()[i]);
-			residualStats.addValue(stl.getResiduals()[i]);
+			residualStats.addValue(stl.getResidual()[i]);
 			deSeasonalStats.addValue(stl.getData()[i] - stl.getSeasonal()[i]);
 		}
 

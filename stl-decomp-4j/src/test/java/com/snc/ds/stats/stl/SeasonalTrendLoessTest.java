@@ -33,7 +33,7 @@ public class SeasonalTrendLoessTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 
 		for (int i = 0; i < data.length; ++i) {
 			assertEquals(data[i], seasonal[i], 1.0e-14);
@@ -56,7 +56,7 @@ public class SeasonalTrendLoessTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 		double[] weights = stl.getWeights();
 
 		for (int i = 0; i < data.length; ++i) {
@@ -79,7 +79,7 @@ public class SeasonalTrendLoessTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 		double[] weights = stl.getWeights();
 
 		for (int i = 0; i < data.length; ++i) {
@@ -112,7 +112,7 @@ public class SeasonalTrendLoessTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 		double[] weights = stl.getWeights();
 
 		for (int i = 0; i < data.length; ++i) {
@@ -204,7 +204,7 @@ public class SeasonalTrendLoessTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 
 		for (int i = 0; i < data.length; ++i) {
 			if (i != 100) {
@@ -244,7 +244,7 @@ public class SeasonalTrendLoessTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 
 		for (int i = 0; i < data.length; ++i) {
 			assertEquals(String.format("seasonal[%d]", i), fRobustNoisySinusoidResults[i][1], trend[i], epsilon);
@@ -294,7 +294,7 @@ public class SeasonalTrendLoessTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 
 		double rsum = 0.0;
 		double r2sum = 0.0;
@@ -358,7 +358,7 @@ public class SeasonalTrendLoessTest {
 
 		Decomposition stl = smoother.decompose();
 
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 
 		double rsum = 0.0;
 		double r2sum = 0.0;
@@ -398,7 +398,7 @@ public class SeasonalTrendLoessTest {
 	private void printStlResults(double[] data, Decomposition stl) {
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 		double[] weights = stl.getWeights();
 
 		System.out.println(String.format("%8s %18s  \t%18s  \t%18s  \t%18s  \t%18s", "index", "data", "trend",

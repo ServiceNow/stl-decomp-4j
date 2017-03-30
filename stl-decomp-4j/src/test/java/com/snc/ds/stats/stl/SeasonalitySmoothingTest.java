@@ -33,7 +33,7 @@ public class SeasonalitySmoothingTest {
 
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 
 		for (int i = 0; i < data.length; ++i) {
 			assertEquals(String.format("seasonal[%d]", i), fTestData.trend[i], trend[i], epsilon);

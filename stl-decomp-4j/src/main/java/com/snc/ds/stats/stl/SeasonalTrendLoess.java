@@ -341,7 +341,7 @@ public class SeasonalTrendLoess {
 		 *
 		 * @return double[] the residuals
 		 */
-		public double[] getResiduals() {
+		public double[] getResidual() {
 			return fResiduals;
 		}
 

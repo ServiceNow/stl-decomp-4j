@@ -14,7 +14,7 @@ class TestUtilities {
 			double[] data, SeasonalTrendLoess.Decomposition stl, String fileName) throws IOException {
 		double[] trend = stl.getTrend();
 		double[] seasonal = stl.getSeasonal();
-		double[] residuals = stl.getResiduals();
+		double[] residuals = stl.getResidual();
 
 		FileWriter out = new FileWriter(fileName);
 		for (int i = 0; i < data.length; ++i) {

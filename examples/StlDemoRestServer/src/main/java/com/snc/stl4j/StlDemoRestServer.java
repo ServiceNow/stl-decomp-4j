@@ -58,14 +58,14 @@ public class StlDemoRestServer {
 //				System.out.println(
 //						String.format("time = %d, value = %f, seasonal = %f, trend = %f, residual = %f, weights = %f",
 //								times.get(i), values.get(i),
-//								stl.getSeasonal()[i], stl.getTrend()[i], stl.getResiduals()[i], stl.getWeights()[i]));
+//								stl.getSeasonal()[i], stl.getTrend()[i], stl.getResidual()[i], stl.getWeights()[i]));
 //			}
 
 			results.time = times.stream().mapToLong(i->i).toArray();
 			results.value = vs;
 			results.seasonal = stl.getSeasonal();
 			results.trend = stl.getTrend();
-			results.residual = stl.getResiduals();
+			results.residual = stl.getResidual();
 			results.weight = stl.getWeights();
 		}
 
