@@ -10,6 +10,7 @@ As with the original Fortran version (and the [R](https://stat.ethz.ch/R-manual/
 ```java
 double[] values = getSomeMonthlyData(); // Monthly time-series data
 
+SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
 SeasonalTrendLoess smoother = builder.
 			setPeriodLength(12).    // Data has a period of 12
 			setSeasonalWidth(35).   // Monthly data smoothed over 35 years
