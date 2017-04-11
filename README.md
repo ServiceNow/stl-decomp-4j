@@ -31,6 +31,8 @@ The `examples/StlDemoRestServer` directory includes a copy of the [Monthly CO<su
 
 ## Documentation
 
+The implementation of the quadratic extension of LoessInterpolator is described, mathematically, in [ImplementationNotes](stl-decomp-4j/docs/ImplementationNotes.pdf).
+
 `TODO: JavaDoc link goes here`
 
 
