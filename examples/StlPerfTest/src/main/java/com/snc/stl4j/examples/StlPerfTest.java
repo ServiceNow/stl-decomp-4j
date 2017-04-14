@@ -2,15 +2,16 @@ package com.snc.stl4j.examples;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.DefaultParser;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
@@ -54,6 +55,18 @@ public class StlPerfTest {
 		System.out.println(
 				String.format("Elapsed time = %f s; Time per iteration = %f ms",
 						elapsed, 1000 * elapsed / fTimedIterations));
+
+		SeasonalTrendLoess.Decomposition stl = smoother.decompose();
+
+		try (PrintWriter writer = new PrintWriter("output.csv", "UTF-8")) {
+			for (int i = 0; i < stl.getData().length; ++i) {
+				double d = stl.getData()[i];
+				double s = stl.getSeasonal()[i];
+				double t = stl.getTrend()[i];
+				double r = stl.getResidual()[i];
+				writer.println(String.format("%.17E, %.17E, %.17E, %.17E", d, s, t, r));
+			}
+		}
 	}
 
 	private static class TimeSeries {

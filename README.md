@@ -2,7 +2,7 @@
 
 The Seasonal-Trend-Loess (STL) algorithm decomposes a time series into seasonal, trend and residual components. The algorithm uses [Loess interpolation](https://en.wikipedia.org/wiki/Local_regression) (original paper [here](http://www.stat.washington.edu/courses/stat527/s13/readings/Cleveland_JASA_1979.pdf)) to smooth the cyclic sub-series (e.g. all January values in the CO<sub>2</sub> data shown in the example below). After removing the seasonality from the signal, the remainder is smoothed (in multiple steps) to find the trend. This process is repeated and may include robustness iterations that take advantage of the weighted-least-squares underpinnings of Loess to remove the effects of outliers. The details are described in [STL: A Seasonal-Trend Decomposition Procedure Based on Loess](http://www.wessa.net/download/stl.pdf).   
 
-**_stl-decomp-4j_** is a Java port of the original Ratfor/Fortran available from [Netlib](http://netlib.org) ([original source here](http://netlib.org/a/stl)), extended to support local quadratic interpolation. **_stl-decomp-4j_** expects equally spaced data with no missing values, similar to the original  Fortran version (and the [R](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/stl.html) and [Python](https://github.com/jcrotinger/pyloess) versions, which both use the original Fortran version under the hood).
+**_stl-decomp-4j_** is a Java port of the original Ratfor/Fortran available from [Netlib](http://netlib.org) ([original source here](http://netlib.org/a/stl), though a copy is also included in `examples/StlPerfTest/fortran_benchmark`), extended to support local quadratic interpolation. **_stl-decomp-4j_** expects equally spaced data with no missing values, similar to the original  Fortran version (and the [R](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/stl.html) and [Python](https://github.com/jcrotinger/pyloess) versions, which both use the original Fortran version under the hood).
 
 ## Example
 
@@ -24,10 +24,13 @@ double[] trend = stl.getTrend();
 double[] residual = stl.getResidual();
 ```
 
-The `examples/StlDemoRestServer` directory includes a copy of the [Monthly CO<sub>2</sub> Measurement Data](http://www.esrl.noaa.gov/gmd/ccgg/trends/) and a simple REST server that reads this data, performs an STL decomposition on the data, and serves up the results to `http://localhost:4567/stldemo`. The `examples/StlDemoRestServer/index.html` file loads the data from this server and plots the resulting decomposition. The code that does the actual decomposition is identical to that shown above, resulting in the following decomposition:
+The [StlDemoRestServer example](examples/StlDemoRestServer) includes a copy of the [Monthly CO<sub>2</sub> Measurement Data](http://www.esrl.noaa.gov/gmd/ccgg/trends/) and a simple REST server that reads this data, performs an STL decomposition on the data, and serves up the results to `http://localhost:4567/stldemo`. The `examples/StlDemoRestServer/index.html` file loads the data from this server and plots the resulting decomposition. The code that does the actual decomposition is identical to that shown above, resulting in the following decomposition:
 
 ![CO2 Plot](examples/StlDemoRestServer/co2_stl_highchart.jpg)
 
+## Benchmarking
+
+The [StlPerfTest example](examples/StlPerfTest) times the STL running on the CO<sub>2</sub> data mentioned above. The same benchmark is implemented in the original Fortran [here](examples/StlPerfTest/fortran_benchmark). Limited tests show the Java to be about half the speed of the Fortran. A comparison of the resulting decompositions is shown in the [StlJavaFortranComparison notebook](examples/StlPerfTest/StlJavaFortranComparison.ipynb).
 
 ## Documentation
 
