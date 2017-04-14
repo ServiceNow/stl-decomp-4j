@@ -12,6 +12,7 @@ target
 # IntelliJ Idea files
 workspace.xml
 tasks.xml
+dictionaries
 
 # Maven files - we reload the pom so these will be regenerated
 */.idea/**/libraries

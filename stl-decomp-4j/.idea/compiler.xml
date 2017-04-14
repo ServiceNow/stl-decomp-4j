@@ -8,11 +8,13 @@
         <outputRelativeToContentRoot value="true" />
         <module name="stl-decomp-4j" />
         <module name="StlDemoRestServer" />
+        <module name="StlPerfTest" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="1.8">
       <module name="stl-decomp-4j" target="1.8" />
       <module name="StlDemoRestServer" target="1.8" />
+      <module name="StlPerfTest" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

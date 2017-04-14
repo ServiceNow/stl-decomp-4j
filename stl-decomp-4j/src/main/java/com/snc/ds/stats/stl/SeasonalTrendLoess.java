@@ -12,6 +12,8 @@ import static com.snc.ds.stats.TimeSeriesUtilities.simpleMovingAverage;
  */
 public class SeasonalTrendLoess {
 
+	private double[] fData;
+
 	private Decomposition fDecomposition;
 
 	private final int fPeriodLength;
@@ -195,7 +197,7 @@ public class SeasonalTrendLoess {
 	SeasonalTrendLoess(double[] data, int periodicity, int ni, int no, LoessSettings seasonalSettings,
                        LoessSettings trendSettings, LoessSettings lowpassSettings) {
 
-		fDecomposition = new Decomposition(data); // TODO: Move to decompose
+		fData = data;
 
 		final int size = data.length;
 
@@ -441,6 +443,10 @@ public class SeasonalTrendLoess {
 	 * @return the STL decomposition
 	 */
 	public Decomposition decompose() {
+		// TODO: Pass input data to decompose and reallocate buffers based on that size.
+
+		fDecomposition = new Decomposition(fData);
+
 		int outerIteration = 0;
 		while (true) {
 
