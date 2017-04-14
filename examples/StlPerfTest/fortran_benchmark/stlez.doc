@@ -1,0 +1,53 @@
+     PURPOSE
+     STLEZ offers easy use of the STL  procedure  by  defaulting  most
+     parameters values.
+     SYNOPSIS
+     stlez(y, n, np, ns, isdeg, itdeg, robust, no, rw, season,
+             trend, work)
+     integer n, np, ns, no isdeg, itdeg
+     real y(n), rw(n), season(n), trend(n), work(n+2*np,7)
+     logical robust
+     ARGUMENTS
+     y       input, time series to be decomposed.
+     n       input, number of values in y.
+     np      input, the period of the seasonal component. For example,
+             if  the  time series is monthly with a yearly cycle, then
+             np=12.
+     ns      input, length of the seasonal smoother.  The value of  ns
+             should be an odd integer greater than or equal to 3; ns>6
+             is recommended.   As  ns  increases  the  values  of  the
+             seasonal component at a given point in the seasonal cycle
+             (e.g., January values of a monthly series with  a  yearly
+             cycle) become smoother.
+     isdeg   input, degree of locally-fitted  polynomial  in  seasonal
+             smoothing.  The value is 0 or 1.
+     itdeg   input,  degree  of  locally-fitted  polynomial  in  trend
+             smoothing.  The value is 0 or 1.
+     robust  input, .true. if robustness iterations are  to  be  used,
+             .false. otherwise.
+     rw      output, final  robustness  weights.   All  rw  are  1  if
+             robust=.false.
+     season  output, seasonal component.
+     trend   output, trend component.
+     no      output, number of robustness iterations.  The  iterations
+             end if a convergence criterion is met or if the number is
+             15.
+     work    workspace of (n+2*np)*7 locations.
+     REFERENCES
+     R.B. Cleveland, W.S.Cleveland, J.E.  McRae,  and  I.  Terpenning,
+     STL:  A  Seasonal-Trend  Decomposition  Procedure Based on Loess,
+     Statistics Research Report, AT&T Bell Laboratories.
+     STLEZ sets parameters to the  values  recommended  in  the  above
+     reference.   Thus if you call STLEZ, you will be using the values
+     summarized below.  See documentation for STL for  definitions  of
+     the parameters.
+     nt = smallest odd integer greater than or equal to
+                         (1.5*np) / (1-(1.5/ns)).
+     nl = smallest odd integer greater than or equal to np.
+     nsjump = ns/10; ntjump = nt/10; nljump = nl/10.
+     ni = 2 if robust=.false.; else ni=1.
+     no = 0 if robust=.false.; else robustness iterations are  carried
+     out until convergence of both seasonal and trend components, with
+     15 iterations maximum.  Convergence occurs if the maximum changes
+     in  individual  seasonal  and  trend fits are less than 1% of the
+     component's range after the previous iteration.
