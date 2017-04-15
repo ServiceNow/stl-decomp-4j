@@ -9,150 +9,158 @@
 
 \begin{document}
 
-\maketitle% this prints the handout title, author, and date
+\maketitle%
 
 \section{Implementation}
 
 \begin{fullwidth}
-The algorithm used by \code{stl-decomp-4j} takes advantage of the fact that the data that is being decomposed is regularly spaced with no missing values to implement the underlying Loess smoothers in an efficient fashion. This document walks through the formulation of local linear interpolation used by the Loess interpolator to explain the flavor of the implementation, and then extends this analysis to the quadratic interpolation that was added to the Java implementation.
+The algorithm used by \code{stl-decomp-4j} assumes that the input data is regularly spaced with no missing values,
+allowing for a very efficient implementation of the underlying Loess smoother. Part of this formulation is explained here in order to extend the formulation to quadratic interpolation. 
 
 \section{Local Linear Interpolation}
 
-This section walks through the derivation of the code used to perform local (weighted) linear interpolation in \code{LinearLoessInterpolator}, which is a straight port of the code in the original Ratfor function \code{stl.r:est}.
-
-The input data is a sequence of data points $\{x_i, y_i\}$, where the $x_i$ are the regularly spaced grid points.
-
-The goal is to derive a set of weights $w_i$ such that the Loess interpolation of the data set at an arbitrary point $x$ can be written as
-\begin{equation*}
+The local (weighted) linear interpolation in \code{LinearLoessInterpolator} is a straight port of the code in the original Ratfor function \code{stl.r:est}. The input data is a sequence of data points $\{x_i, y_i\}$, where the $x_i$ are the regularly spaced grid points. The Loess interpolation of the data set at an arbitrary point $x$ can be expressed as
+\begin{equation}\label{eq:interp-def}
   y(x) = \sum_{i = 1}^m \hat{w}_i(x) y_i
-\end{equation*}
-i.e. the interpolation is re-cast as a linear operation on the input y-values.
+\end{equation}
+i.e. the interpolation can be re-cast as a linear operation on the input y-values. The weights $\hat{w}_i(x)$ depend only on the original weights, $w_i$, and on geometric factors.
 
-We can write a measure of the square error from weighted least-squares interpolation as
-\begin{equation*}
+For linear interpolation, we desire coefficients $\alpha$ and $\beta$ such that the line
+\begin{equation}\label{eq:linear}
+	y(x) = \alpha + \beta x
+\end{equation}
+is the best fit to our set of points. The square error from a weighted least-squares fit of this curve to the training data is
+\begin{equation}\label{eq:mean-square-error}
 E = {\frac{1}{2}} \sum_{i=1}^m (y_i - \alpha - \beta x_i)^2 \cdot w_i
-\end{equation*}
+\end{equation}
 where $\sum w_i = 1$ are external weights (in Loess these come from the implementation of the locality window).
 
 \subsection{Finding $\alpha$}
 
-The optimal choices of $\alpha$ and $\beta$ are found by differentiating with respect to these, setting to 0 and solving:
-\begin{equation*}
+The optimal choices of $\alpha$ and $\beta$ are found by differentiating Eq. (\ref{eq:mean-square-error}) with respect to each of these, setting to zero and solving:
+\begin{equation}
 \frac{\partial E}{\partial \alpha} = - \sum_{i=1}^m w_i (y_i - \alpha - \beta x_i) = 0
-\end{equation*}
+\end{equation}
 Then
-\begin{equation*}
+\begin{equation}\label{eq:alpha1}
 \sum w_i y_i - \alpha \sum w_i - \beta \sum w_i x_i = 0
-\end{equation*}
-Or, defining $\langle y \rangle = \sum w_i y_i$, $\langle x \rangle = \sum w_i x_i$ and recalling that the $w_i$ are normalized, this can be rewritten as:
-\begin{equation*}
+\end{equation}
+For a given sequence ${z_i}$ we define
+\begin{equation}\label{eq:avg-def}
+	\langle z \rangle \equiv \sum_i w_i z_i
+\end{equation}
+Then we can rewrite the Eq. (\ref{eq:alpha1}) as
+\begin{equation}\label{eq:alpha}
 \alpha = \langle y \rangle - \beta \langle x \rangle
-\end{equation*}
+\end{equation}
 
 \subsection{Finding $\beta$}
 
 Repeating this exercise for $\beta$, skipping the intermediate details, gives
-\begin{equation*}
+\begin{equation}\label{eq:beta}
 \beta = \frac{\langle x y \rangle - \langle x \rangle \langle y \rangle}{\langle x^2 \rangle - \langle x \rangle^2}
-\end{equation*}
+\end{equation}
 
 \subsection{The Weight}
 
-Given the expressions above, we can write our expression for the interpolant at a point $x$ as
-\begin{align*}
-y(x) &= \alpha + \beta x_i \\
+Given Eqs. (\ref{eq:alpha}) and (\ref{eq:beta}),  Eq. (\ref{eq:linear}) becomes
+\begin{align}
+y(x) &= \alpha + \beta x \\
        &= \langle y \rangle + \beta ( x - \langle x \rangle) \\
        &= \langle y \rangle + \frac{\langle x y \rangle - \langle x \rangle \langle y \rangle}{\langle x^2 \rangle - \langle x \rangle^2} (x - \langle x \rangle)
-\end{align*}
-Writing out the averages that involve $y$ we have:
-\begin{align*}
-y(x) &= \sum_j w_j y_j + \sum_j \frac{x - \langle x \rangle}{\langle x^2 \rangle - \langle x \rangle^2} w_j (y_j(x_j - \langle x \rangle)) \\
+\end{align}
+Writing out the averages that involve $y$, we have:
+\begin{align}
+y(x) &= \sum_j w_j y_j + \sum_j \frac{x - \langle x \rangle}{\langle x^2 \rangle - \langle x \rangle^2} w_j (x_j - \langle x \rangle)y_j  \\
        &= \sum_j w_j \left[1 + \frac{x - \langle x \rangle}{\langle x^2 \rangle - \langle x \rangle^2}(x_j - \langle x \rangle) \right] y_j \\
        &= \sum_j \hat{w}_j(x) y_j
-\end{align*}
-where we define:
-\begin{equation*}
+\end{align}
+where:
+\begin{equation}\label{eq:linear-weight}
 \hat{w}_j(x) \equiv w_j\left[ 1 + \frac{(x - \langle x \rangle)(x_j - \langle x \rangle)}{\langle x^2 \rangle - \langle x \rangle^2} \right]
-\end{equation*}
+\end{equation}
 
-So, given the point $x$ at which we want to perform the interpolation (or extrapolation - $x$ is not limited to being in the range of the set of grid points, $\{x_i\}$), we just calculate a geometric adjustment to the original weights, $w_i$. These various averages can be computed efficiently since $w_i$ are non-zero only in the Loess window around the point $x$.
+So, given the point $x$ at which we want to perform the interpolation (or extrapolation - $x$ is not limited to being in the range of the set of grid points, $\{x_i\}$), we just calculate a geometric adjustment to the original weights, $w_i$. These various averages can be computed efficiently since the weights $w_i$ are non-zero only in the Loess window near the point $x$.
 
 \section{Local Quadratic Interpolation}
 As before, given data points $\{x_i, y_i\}, i = 1, ..., m$, and externally supplied weights $w_i, \sum_i w_i = 1$, we want to find a set of modified weights $\hat{w}_i$ such that the interpolation at a value $x$ can be written as
-\begin{equation*}
+\begin{equation}
 y(x) = \sum_{i=1}^m \hat{w}_i(x) y_i
-\end{equation*}
+\end{equation}
 Now we model the data as a local quadratic:
-\begin{equation*}
-y_i = a_0 + a_1 x_i + a_2 x_i^2 + \epsilon_i
-\end{equation*}
+\begin{equation}\label{eq:quadratic}
+y(x) = a_0 + a_1 x + a_2 x^2
+\end{equation}
 
 \subsection{Finding $a_0$}
-As before, we define an error:
-\begin{equation*}
+The square error in the local interpolation of the training data is:
+\begin{equation}\label{eq:quad-error}
 E = \frac{1}{2} \sum_i w_i (y_i - a_0 - a_1 x_i - a_2 x_i^2)
-\end{equation*}
-Minimizing
-\begin{equation*}
+\end{equation}
+Minimizing with respect to $a_0$,
+\begin{equation}
 \frac{\partial E}{\partial a_0} = - \sum_i w_i (y_i - a_0 - a_1 x_i - a_2 x_i^2) = 0
-\end{equation*}
-
-\begin{equation*}
-\Rightarrow a_0 = \langle y \rangle - a_1 \langle x \rangle - a_2 \langle x^2 \rangle
-\end{equation*}
+\end{equation}
+This yields the obvious extension of the linear result:
+\begin{equation}\label{eq:a0}
+a_0 = \langle y \rangle - a_1 \langle x \rangle - a_2 \langle x^2 \rangle
+\end{equation}
 where the averages $\langle \cdot \rangle$ are defined as before.
 
 \subsection{Finding $a_1$}
-Simiarly, for $a_1$ we have
-\begin{align*}
+Similarly, for $a_1$ we have
+\begin{align}
 \frac{\partial E}{\partial a_1} &= - \sum_i w_i x_i (y_i - a_0 - a_1 x_i - a_2 x_i^2) = 0 \\
                                 &= - \langle x y \rangle + a_0 \langle x \rangle + a_1 \langle x^2 \rangle + a_2 \langle x^3 \rangle = 0
-\end{align*}
-\begin{align*}
+\end{align}
+Solving for $\langle x y \rangle$ and substituting $a_0$ from Eq. (\ref{eq:a0}):
+\begin{align}
 \langle x y \rangle &= \left[\langle y \rangle - a_1 \langle x \rangle - a_2 \langle x^2 \rangle \right] \langle x \rangle + a_1 \langle x^2 \rangle + a_2 \langle x^3 \rangle \\
-                    &= \langle x \rangle \langle y \rangle - a_1 \langle x^2 \rangle - a_2 \langle x \rangle \langle x^2 \rangle + a_1 \langle x^2 \rangle + a_2 \langle x^3 \rangle
-\end{align*}
+                    &= \langle x \rangle \langle y \rangle - a_1 \langle x \rangle^2 - a_2 \langle x \rangle \langle x^2 \rangle + a_1 \langle x^2 \rangle + a_2 \langle x^3 \rangle
+\end{align}
 Gathering terms
-\begin{equation*}
+\begin{equation}\label{eq:xymxy}
 \langle x y \rangle - \langle x \rangle \langle y \rangle = a_1 (\langle x^2 \rangle - \langle x \rangle^2) + a_2 (\langle x^3 \rangle - \langle x^2 \rangle \langle x \rangle)
-\end{equation*}
-We definie the following geometric factors $M_2$ and $M_3$, and a correlation factor $C_{xy}$:
-\begin{align*}
-M_2 &= \langle x^2 \rangle - \langle x \rangle^2 \\
-M_3 &= \langle x^3 \rangle - \langle x^2 \rangle \langle x \rangle \\
-C_{xy} &= \langle x y \rangle - \langle x \rangle \langle y \rangle \\
-       &= a_1 M_2 + a_2 M_3
-\end{align*}
-Then we can write:
-\begin{equation*}
+\end{equation}
+We define the following geometric factors $M_2$ and $M_3$, and a correlation factor $C_{xy}$:
+\begin{align}
+M_2 &= \langle x^2 \rangle - \langle x \rangle^2 \label{eq:m2} \\
+M_3 &= \langle x^3 \rangle - \langle x^2 \rangle \langle x \rangle  \label{eq:m3} \\
+C_{xy} &= \langle x y \rangle - \langle x \rangle \langle y \rangle \label{eq:cxy}
+\end{align}
+Then Eq. (\ref{eq:xymxy}) can be rewritten as
+\begin{equation}
+C_{xy} = a_1 M_2 + a_2 M_3
+\end{equation}
+Solving for $a_1$
+\begin{equation}\label{eq:a1}
 a_1 = \frac{C_{xy}}{M_2} - a_2 \frac{M_3}{M_2}
-\end{equation*}
+\end{equation}
 
 \subsection{Finding $a_2$}
 
-For $\alpha_2$ the result of minimizing the error with respect to $\alpha_2$ is similar to the above, just adding another $x$ in the averages, leading to
-
-\begin{equation}
+The result of minimizing Eq. (\ref{eq:quad-error}) with respect to $\alpha_2$ results in an expression similar to Eq.~(\ref{eq:xymxy}), just adding another $x$ in the appropriate averages, leading to
+\begin{equation}\label{eq:x2ymx2y}
 \langle x^2 y \rangle - \langle x^2 \rangle \langle y \rangle = a_1 (\langle x^3 \rangle - \langle x^2 \rangle \langle x \rangle) + a_2 (\langle x^4 \rangle - \langle x^2 \rangle^2)
 \end{equation}
 We define the following geometric and correlation factors:
-\begin{align*}
-M_4 &= \langle x^4 \rangle - \langle x^2 \rangle^2 \\
-C_{x^2y} &= \langle x^2 y \rangle - \langle x^2 \rangle \langle y \rangle
-\end{align*}
-Substituting these into the above gives
+\begin{align}
+M_4 &= \langle x^4 \rangle - \langle x^2 \rangle^2 \label{eq:m4} \\
+C_{x^2y} &= \langle x^2 y \rangle - \langle x^2 \rangle \langle y \rangle \label{eq:cx2y}
+\end{align}
+Using Eq. (\ref{eq:m3}) and Eqs. (\ref{eq:m4}-\ref{eq:cx2y}), Eq. (\ref{eq:x2ymx2y}) becomes
 \begin{equation*}
 C_{x^2y} = a_1 M_3 + a_2 M_4
 \end{equation*}
-Substituting our expression for $a_1$ from above
-\begin{align*}
+Substituting our expression for $a_1$ from Eq. (\ref{eq:a1}),
+\begin{align}
 C_{x^2y} &= \left[
      \frac{C_{xy}}{M_2} - a_2 \frac{M_3}{M_2}
      \right] M_3 + a_2 M_4 \\
      &= \frac{M_3}{M_2} C_{xy} + a_2 (M_4 - \frac{M_3^2}{M_2})
-\end{align*}
-Solving for $a_2$...
-\begin{align*}
+\end{align}
+Solving for $a_2$ and simplifying
+\begin{align}
 a_2 &= \frac{
         C_{x^2y} - \frac{M_3}{M_2} C_{xy}
      }{
@@ -162,9 +170,9 @@ a_2 &= \frac{
         M_2 C_{x^2y} - M_3 C_{xy}
      }{
         M_2 M_4 - M_3^2
-     }
-\end{align*}
-Substituting back into the expression for $a_1$ gives
+     } \label{eq:a2}
+\end{align}
+Substituting Eq. (\ref{eq:a2}) back into Eq. (\ref{eq:a1}) gives
 \begin{align*}
 a_1 &= \frac{C_{xy}}{M_2} - \frac{
         M_2 C_{x^2y} - M_3 C_{xy}
@@ -176,57 +184,61 @@ a_1 &= \frac{C_{xy}}{M_2} - \frac{
          + \frac{M_3^2 }{M_2 M_4 - M_3^2} \frac{C_{xy}}{M_2} \\
      &= \frac{C_{xy}}{M_2} \frac{M_2 M_4 - M_3^2}{M_2 M_4 - M_3^2}
          + \frac{M_3^2 }{M_2 M_4 - M_3^2} \frac{C_{xy}}{M_2} 
-         - \frac{M_3 C_{x^2y}}{M_2 M_4 - M_3^2} \\
-     &=  \frac{M_4 C_{xy} - M_3 C_{x^2y}}{M_2 M_4 - M_3^2}
+         - \frac{M_3 C_{x^2y}}{M_2 M_4 - M_3^2}
 \end{align*}
+So our final expression for $a_1$ is
+\begin{equation}\label{eq:a1-final}
+	a_1     =  \frac{M_4 C_{xy} - M_3 C_{x^2y}}{M_2 M_4 - M_3^2}
+\end{equation}
 
 \subsection{The Weight}
-Returning to the interpolation expression, we start by substituting back $a_0$:
-\begin{align*}
+Returning to the interpolation expression, Eq. (\ref{eq:quadratic}), we start by substituting back $a_0$:
+\begin{align}
 y(x) &= a_0 + a_1 x + a_2 x^2 \\
      &= \langle y \rangle - a_1 \langle x \rangle - a_2 \langle x^2 \rangle + a_1 x + a_2 x^2 \\
-     &= \langle y \rangle + a_1 (x - \langle x \rangle) + a_2 (x^2 - \langle x^2 \rangle)
-\end{align*}
-Defining
-\begin{align*}
+     &= \langle y \rangle + a_1 (x - \langle x \rangle) + a_2 (x^2 - \langle x^2 \rangle) \label{eq:ywa1a2}
+\end{align}
+Defining the following geometric terms
+\begin{align}
 \beta_2 &= \frac{M_4}{M_2 M_4 - M_3^2} \\
 \beta_3 &= \frac{M_3}{M_2 M_4 - M_3^2}\\
 \beta_4 &= \frac{M_2}{M_2 M_4 - M_3^2}
-\end{align*}
-We can write
-\begin{align*}
+\end{align}
+We can rewrite Eqs. (\ref{eq:a2}) and (\ref{eq:a1-final}) as
+\begin{align}
 a_1 &= \beta_2 C_{xy} - \beta_3 C_{x^2 y} \\
 a_2 &= \beta_4 C_{x^2y} - \beta_3 C_{xy}
-\end{align*}
-Then
-\begin{align*}
+\end{align}
+Then Eq. (\ref{eq:ywa1a2}) becomes
+\begin{align}
 y(x) &= \langle y \rangle + (x - \langle x \rangle)(\beta_2 C_{xy} - \beta_3 C_{x^2 y}) 
        + (x^2 - \langle x^2 \rangle)(\beta_4 C_{x^2y} - \beta_3 C_{xy}) \\
        &= \langle y \rangle  + [\beta_2(x - \langle x \rangle) - \beta_3 (x^2 - \langle x^2 \rangle)] C_{xy}
        + [\beta_4(x^2 - \langle x^2 \rangle) - \beta_3 (x - \langle x \rangle)] C_{x^2y}
-\end{align*}
-Defining
-\begin{align*}
+\end{align}
+Defining the following functions of $x$
+\begin{align}
 \hat{a}_1(x) &\equiv \beta_2(x - \langle x \rangle) - \beta_3 (x^2 - \langle x^2 \rangle) \\
 \hat{a}_2(x) &\equiv \beta_4(x^2 - \langle x^2 \rangle) - \beta_3 (x - \langle x \rangle)
-\end{align*}
-we can write, using the definitions of $C_{xy}$ and $C_{x^2y}$
-\begin{align*}
+\end{align}
+we can write, using the definitions of $C_{xy}$ and $C_{x^2y}$, Eqs. (\ref{eq:cxy}) and (\ref{eq:cx2y}):
+\begin{align}
 y(x) &= \langle y \rangle + \hat{a}_1(x) C_{xy} + \hat{a}_2(x) C_{x^2y} \\
      &= \sum_i w_i y_i + \hat{a}_1(x)  \sum_i w_i (x_i - \langle x \rangle) y_i 
          + \hat{a}_2(x) \sum_i w_i (x_i^2 - \langle x^2 \rangle) y_i \\
      &= \sum_i w_i y_i \left[1 + \hat{a}_1(x) (x_i - \langle x \rangle) 
-         + \hat{a}_2(x) (x_i^2 - \langle x^2 \rangle)\right] \\
-     &= \sum_i \hat{w}_i(x) y_i
-\end{align*}
+         + \hat{a}_2(x) (x_i^2 - \langle x^2 \rangle)\right]
+\end{align}
+So finally we arrive at our goal
+\begin{equation}
+y(x)     = \sum_i \hat{w}_i(x) y_i
+\end{equation}
 where
-\begin{equation*}
+\begin{equation}
     \hat{w}_i(x) \equiv w_i \left[1 + \hat{a}_1(x) (x_i - \langle x \rangle) 
          + \hat{a}_2(x) (x_i^2 - \langle x^2 \rangle)\right]
-\end{equation*}
-
-The code in \code{QuadraticLoessInterpolator.updateWeights} in \code{LoessInterpolator.java} is very close to a literal transcription of the math above.
-
+\end{equation}
+The code in \code{QuadraticLoessInterpolator.updateWeights} in \code{LoessInterpolator.java} is very close to a literal transcription of the above math.
 
 \end{fullwidth}
 \end{document}
