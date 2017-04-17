@@ -30,7 +30,9 @@ The [StlDemoRestServer example](examples/StlDemoRestServer) includes a copy of t
 
 ## Benchmarking
 
-The [StlPerfTest example](examples/StlPerfTest) times the STL running on the CO<sub>2</sub> data mentioned above. The same benchmark is implemented in the original Fortran [here](examples/StlPerfTest/fortran_benchmark). Limited tests show the Java to be about half the speed of the Fortran. A comparison of the resulting decompositions is shown in the [StlJavaFortranComparison notebook](examples/StlPerfTest/StlJavaFortranComparison.ipynb).
+The [StlPerfTest example](examples/StlPerfTest) times the STL running on the CO<sub>2</sub> data mentioned above or on a time-series of 10 years of random hourly data. The same benchmark is implemented in the original Fortran [here](examples/StlPerfTest/fortran_benchmark). See [Performance Tests](examples/StlPerfTest/Performance Test) for instructions on running these tests. 
+
+Limited tests show the Java to be about half the speed of the Fortran. A comparison of the resulting decompositions is shown in the [StlJavaFortranComparison notebook](examples/StlPerfTest/StlJavaFortranComparison.ipynb).
 
 ## Documentation
 
