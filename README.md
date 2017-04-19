@@ -4,7 +4,7 @@ The Seasonal-Trend-Loess (STL) algorithm decomposes a time series into seasonal,
 
 **_stl-decomp-4j_** is a Java port of the original Ratfor/Fortran available from [Netlib](http://netlib.org) ([original source here](http://netlib.org/a/stl); also included as part of `examples/StlPerfTest/fortran_benchmark`), extended to support local quadratic interpolation. **_stl-decomp-4j_** expects equally spaced data with no missing values, similar to the original  Fortran version (and the [R](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/stl.html) and [Python](https://github.com/jcrotinger/pyloess) versions, which both use the original Fortran version under the hood).
 
-Check out the [wiki](wiki) for TODOs, etc.
+Check out the [the **_stl-decomp-4j_** wiki](https://github.com/ServiceNow/stl-decomp-4j/wiki) for TODOs, etc.
 
 ## Example
 
