@@ -4,6 +4,8 @@ The Seasonal-Trend-Loess (STL) algorithm decomposes a time series into seasonal,
 
 **_stl-decomp-4j_** is a Java port of the original Ratfor/Fortran available from [Netlib](http://netlib.org) ([original source here](http://netlib.org/a/stl); also included as part of `examples/StlPerfTest/fortran_benchmark`), extended to support local quadratic interpolation. **_stl-decomp-4j_** expects equally spaced data with no missing values, similar to the original  Fortran version (and the [R](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/stl.html) and [Python](https://github.com/jcrotinger/pyloess) versions, which both use the original Fortran version under the hood).
 
+Check out the [wiki](wiki) for TODOs, etc.
+
 ## Example
 
 At a minimum, the STL algorithm requires specifying the periodicity of the data (e.g. 12 for monthly) and the width of the Loess smoother used to smooth the cyclic seasonal sub-series. In general, there are three Loess smoothers that each require three parameters: a width, a degree, and a jump. The width specifies the number of data points that the local interpolation uses to smooth each point, the degree specifies the degree of the local polynomial that is fit to the data, and the jump specifies how many points are skipped between Loess interpolations, with linear interpolation being done between these points. Because of this complexity, construction is done via `Builder` objects, as shown in this simple example.
