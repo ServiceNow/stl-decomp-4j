@@ -5,8 +5,38 @@
   <artifactId>stl-decomp-4j</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
+
   <name>stl-decomp-4j</name>
-  <url>http://maven.apache.org</url>
+  <description>Seasonal Decomposition of Time Series by Loess</description>
+  <url>https://github.com/ServiceNow/stl-decomp-4j</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Cuong Tran</name>
+      <email>cuong.tran@servicenow.com</email>
+      <organization>ServiceNow, Inc.</organization>
+      <organizationUrl>http://www.servicenow.com</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/ServiceNow/stl-decomp-4j</connection>
+    <developerConnection>scm:git:ssh://github.com:ServiceNow/stl-decomp-4j</developerConnection>
+    <url>http://github.com/ServiceNow/stl-decomp-4j/tree/master</url>
+  </scm>
+
+  <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -25,8 +55,74 @@
       <version>1.6.1</version>
     </dependency>
   </dependencies>
-  <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.2.1</version>
+        <executions>
+          <execution>
+          <id>attach-sources</id>
+          <goals>
+            <goal>jar-no-fork</goal>
+          </goals>
+        </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9.1</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+       </plugin>
+       <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-gpg-plugin</artifactId>
+         <version>1.5</version>
+         <executions>
+           <execution>
+             <id>sign-artifacts</id>
+             <phase>verify</phase>
+             <goals>
+               <goal>sign</goal>
+             </goals>
+           </execution>
+         </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <distributionManagement>
+    <repository>
+      <id>ctran-maven-repo</id>
+      <name>ctran-maven</name>
+      <url>https://api.bintray.com/maven/ctran/maven/stl-decomp-4j/;publish=1</url>
+    </repository>
+  </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>use-ossrh</id>
+      <distributionManagement>
+        <snapshotRepository>
+          <id>ossrh</id>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+          <id>ossrh</id>
+          <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+      </distributionManagement>
+    </profile>
+  </profiles>
+
 </project>
