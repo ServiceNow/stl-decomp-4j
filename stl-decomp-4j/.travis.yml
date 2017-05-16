@@ -1,0 +1,6 @@
+language: java
+jdk:
+  - oraclejdk8
+
+script: mvn -B -f stl-decomp-4j/pom.xml clean test
+
