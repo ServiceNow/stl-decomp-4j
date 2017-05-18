@@ -19,6 +19,12 @@
 
   <developers>
     <developer>
+      <name>Jim Crotinger</name>
+      <email>jim.crotinger@servicenow.com</email>
+      <organization>ServiceNow, Inc.</organization>
+      <organizationUrl>http://www.servicenow.com</organizationUrl>
+    </developer>
+    <developer>
       <name>Cuong Tran</name>
       <email>cuong.tran@servicenow.com</email>
       <organization>ServiceNow, Inc.</organization>
