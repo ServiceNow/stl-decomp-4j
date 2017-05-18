@@ -4,7 +4,7 @@
   <groupId>com.github.servicenow.stl4j</groupId>
   <artifactId>stl-decomp-4j</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.1.CR-SNAPSHOT</version>
 
   <name>stl-decomp-4j</name>
   <description>Seasonal Decomposition of Time Series by Loess</description>
