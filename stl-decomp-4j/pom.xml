@@ -107,28 +107,23 @@
     </plugins>
   </build>
 
+  <!-- <distributionManagement> -->
+  <!--   <repository> -->
+  <!--     <id>ctran-maven-repo</id> -->
+  <!--     <name>ctran-maven</name> -->
+  <!--     <url>https://api.bintray.com/maven/ctran/maven/stl-decomp-4j/;publish=1</url> -->
+  <!--   </repository> -->
+  <!-- </distributionManagement> -->
+
   <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
     <repository>
-      <id>ctran-maven-repo</id>
-      <name>ctran-maven</name>
-      <url>https://api.bintray.com/maven/ctran/maven/stl-decomp-4j/;publish=1</url>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
-
-  <profiles>
-    <profile>
-      <id>use-ossrh</id>
-      <distributionManagement>
-        <snapshotRepository>
-          <id>ossrh</id>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-          <id>ossrh</id>
-          <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-      </distributionManagement>
-    </profile>
-  </profiles>
 
 </project>
