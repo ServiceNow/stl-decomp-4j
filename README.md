@@ -45,6 +45,19 @@ The implementation of the quadratic extension of `LoessInterpolator` is describe
 
 `TODO: JavaDoc link goes here`
 
+## Build Dependencies
+To include **_stl-decomp-4j_** in your maven project, add the following to your pom file:
 
+```xml
+        <dependency>
+          <groupId>com.github.servicenow.stl4j</groupId>
+          <artifactId>stl-decomp-4j</artifactId>
+          <version>1.0.0</version>
+        </dependency>
+```
 
+The **_stl-decomp-4j_** implementation has no external dependencies.
 
+The unit tests depend on `junit`, `commons-math3` and `slf4j-simple`.
+
+The examples have further dependencies on `commons-cli`, `opencsv`, `spark-core`, and `jackson-mapper-asl`.
