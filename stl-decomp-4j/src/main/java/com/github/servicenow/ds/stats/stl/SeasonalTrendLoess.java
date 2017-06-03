@@ -2,8 +2,6 @@ package com.github.servicenow.ds.stats.stl;
 
 import java.util.Arrays;
 
-import com.github.servicenow.ds.stats.TimeSeriesUtilities;
-
 import static com.github.servicenow.ds.stats.TimeSeriesUtilities.simpleMovingAverage;
 
 /**
@@ -14,7 +12,7 @@ import static com.github.servicenow.ds.stats.TimeSeriesUtilities.simpleMovingAve
  */
 public class SeasonalTrendLoess {
 
-	private double[] fData;
+	private final double[] fData;
 
 	private Decomposition fDecomposition;
 
@@ -42,7 +40,7 @@ public class SeasonalTrendLoess {
 
 		private Integer fSeasonalWidth = null;
 		private Integer fSeasonalJump = null;
-		private int fSeasonalDegree = 1;
+		private Integer fSeasonalDegree = null;
 
 		private Integer fTrendWidth = null;
 		private Integer fTrendJump = null;
@@ -56,6 +54,10 @@ public class SeasonalTrendLoess {
 
 		private int fInnerIterations = 2;
 		private int fRobustIterations = 0;
+
+		// Following the R interface, we implement a "periodic" flag that defaults to false.
+
+		private boolean fPeriodic = false;
 
 		private LoessSettings buildSettings(int width, int degree, Integer jump) {
 			if (jump == null) {
@@ -140,8 +142,20 @@ public class SeasonalTrendLoess {
 			return this;
 		}
 
+		public Builder setPeriodic() {
+			fPeriodic = true;
+			return this;
+		}
+
 		public SeasonalTrendLoess buildSmoother(double[] data) {
 			sanityCheck(data);
+
+			if (fPeriodic) {
+				fSeasonalWidth = 100 * data.length;
+				fSeasonalDegree = 0;
+			} else if (fSeasonalDegree == null) {
+				fSeasonalDegree = 1;
+			}
 
 			LoessSettings seasonalSettings = buildSettings(fSeasonalWidth, fSeasonalDegree, fSeasonalJump);
 
@@ -169,9 +183,23 @@ public class SeasonalTrendLoess {
 				throw new IllegalArgumentException(
 						"SeasonalTrendLoess.Builder: Data array must be non-null");
 
-			if (fSeasonalWidth == null)
-				throw new IllegalArgumentException(
-						"SeasonalTrendLoess.Builder: Seasonal LOESS Width must be specified.");
+			if (fPeriodic) {
+				if (fSeasonalWidth != null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setSeasonalWidth and setPeriodic cannot both be called.");
+
+				if (fSeasonalDegree != null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setSeasonalDegree and setPeriodic cannot both be called.");
+
+				if (fSeasonalJump != null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setSeasonalJump and setPeriodic cannot both be called.");
+			} else {
+				if (fSeasonalWidth == null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setSeasonalWidth or setPeriodic must be called.");
+			}
 
 			if (fPeriodLength == null)
 				throw new IllegalArgumentException(
@@ -508,9 +536,9 @@ public class SeasonalTrendLoess {
 		// extendedSeasonal.length == data.length + 2 * periodicity
 		//
 		// and the length after each pass is.................................
-		double[] pass1 = TimeSeriesUtilities.simpleMovingAverage(fExtendedSeasonal, fPeriodLength); // data.length + periodLength + 1
-		double[] pass2 = TimeSeriesUtilities.simpleMovingAverage(pass1, fPeriodLength);				// data.length + 2
-		double[] pass3 = TimeSeriesUtilities.simpleMovingAverage(pass2, 3);							// data.length
+		double[] pass1 = simpleMovingAverage(fExtendedSeasonal, fPeriodLength); // data.length + periodLength + 1
+		double[] pass2 = simpleMovingAverage(pass1, fPeriodLength);				// data.length + 2
+		double[] pass3 = simpleMovingAverage(pass2, 3);							// data.length
 
 		// assert pass3.length == fData.length; // testing sanity check.
 

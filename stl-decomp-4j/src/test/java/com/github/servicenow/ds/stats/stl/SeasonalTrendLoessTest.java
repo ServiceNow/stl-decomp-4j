@@ -141,7 +141,38 @@ public class SeasonalTrendLoessTest {
 
 		SeasonalTrendLoess.Decomposition stl = smoother.decompose();
 
-		double epsilon = 0.0; // Doing absolute differences and some values > 10
+		double epsilon = 0.0;
+
+		double[] seasonal = stl.getSeasonal();
+
+		for (int i = 0; i < 12; ++i) {
+			for (int p = 0; p < 12; ++p) {
+				assertEquals(seasonal[i], seasonal[i + p * 12], epsilon);
+			}
+		}
+	}
+
+	@Test
+	public void setPeriodicTest() {
+		// To force periodicity, smooth the cyclic sub-series with a zero degree polynomial and a very long window,
+		// causing it to interpolate each sub-series point at the average for the subseries.
+
+		double data[] = new double[144];
+		for (int i = 0; i < data.length; ++i) {
+			data[i] = fNonRobustNoisySinusoidResults[i][0];
+		}
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder().setPeriodLength(12);
+		builder.setPeriodic();
+		builder.setTrendWidth(23);
+		builder.setLowpassWidth(13);
+		builder.setInnerIterations(2).setRobustnessIterations(0);
+
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = smoother.decompose();
+
+		double epsilon = 2e-8; // setPeriodic only sets the length to 100 * data.length
 
 		double[] seasonal = stl.getSeasonal();
 
@@ -171,7 +202,7 @@ public class SeasonalTrendLoessTest {
 
 		SeasonalTrendLoess.Decomposition stl = smoother.decompose();
 
-		double epsilon = 1.0e-10;
+		double epsilon = 1.0e-10; // Doing absolute differences and some values > 10
 
 		double[] seasonal = stl.getSeasonal();
 
@@ -276,6 +307,21 @@ public class SeasonalTrendLoessTest {
 	@Test(expected=IllegalArgumentException.class)
 	public void periodLengthMustBeSet() {
 		new SeasonalTrendLoess.Builder().setSeasonalWidth(999).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setPeriodicDisallowsSeasonalWidth() {
+		new SeasonalTrendLoess.Builder().setPeriodic().setSeasonalWidth(999).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setPeriodicDisallowsSeasonalJump() {
+		new SeasonalTrendLoess.Builder().setPeriodic().setSeasonalDegree(2).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setPeriodicDisallowsSeasonalDegree() {
+		new SeasonalTrendLoess.Builder().setPeriodic().setSeasonalJump(1).buildSmoother(new double[2000]);
 	}
 
 	@Ignore("For manual testing only")
