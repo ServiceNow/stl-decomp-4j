@@ -545,7 +545,7 @@ public class SeasonalTrendLoess {
 		LoessSmoother lowPassLoess = fLowpassLoessFactory.setData(pass3).build();
 		fDeSeasonalized = lowPassLoess.smooth();
 
-		// dumpDebugData("lowpass", lowpass);
+	    // dumpDebugData("lowpass", fDeSeasonalized);
 	}
 
 	/**

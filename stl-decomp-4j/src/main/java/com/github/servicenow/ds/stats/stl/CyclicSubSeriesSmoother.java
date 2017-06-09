@@ -233,7 +233,7 @@ public class CyclicSubSeriesSmoother {
 
 		for (int i = 1; i <= fNumPeriodsToExtrapolateForward; i++) {
 			Double ys = interpolator.smoothOnePoint(right + i, left, right);
-			smoothedData[rightValue + i] = ys == null ? smoothedData[rightValue + 1] : ys;
+			smoothedData[rightValue + i] = ys == null ? smoothedData[rightValue] : ys;
 		}
 	}
 
