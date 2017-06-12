@@ -52,7 +52,7 @@ To include **_stl-decomp-4j_** in your maven project, add the following to your 
         <dependency>
           <groupId>com.github.servicenow.stl4j</groupId>
           <artifactId>stl-decomp-4j</artifactId>
-          <version>1.0.0</version>
+          <version>1.0.1</version>
         </dependency>
 ```
 
