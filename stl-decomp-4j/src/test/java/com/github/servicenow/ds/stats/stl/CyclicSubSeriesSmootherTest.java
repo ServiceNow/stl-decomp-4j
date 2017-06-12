@@ -26,7 +26,8 @@ public class CyclicSubSeriesSmootherTest {
 		Builder builder = new Builder();
 		builder.setWidth(7); // Sub-cycle data is linear so width shouldn't matter
 
-		CyclicSubSeriesSmoother sssmoother = builder.setDataLength(data.length).setPeriodicity(period).build();
+		CyclicSubSeriesSmoother sssmoother = builder.setDataLength(data.length).setPeriodicity(period)
+				.extrapolateForwardAndBack(1).build();
 
 		sssmoother.smoothSeasonal(data, extendedData, null);
 
@@ -103,4 +104,33 @@ public class CyclicSubSeriesSmootherTest {
 		builder.setDegree(3);
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void widthMustBeSet() {
+		Builder builder = new Builder();
+		builder.setDataLength(100).extrapolateForwardAndBack(1).setPeriodicity(12).build();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void dataLengthMustBeSet() {
+		Builder builder = new Builder();
+		builder.setWidth(3).extrapolateForwardAndBack(1).setPeriodicity(12).build();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void periodMustBeSet() {
+		Builder builder = new Builder();
+		builder.setDataLength(100).extrapolateForwardAndBack(1).setWidth(11).build();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void backwardExtrapolationMustBeSet() {
+		Builder builder = new Builder();
+		builder.setDataLength(100).setNumPeriodsForward(1).setWidth(11).setPeriodicity(12).build();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void forwardExtrapolationMustBeSet() {
+		Builder builder = new Builder();
+		builder.setDataLength(100).setNumPeriodsBackward(1).setWidth(11).setPeriodicity(12).build();
+	}
 }

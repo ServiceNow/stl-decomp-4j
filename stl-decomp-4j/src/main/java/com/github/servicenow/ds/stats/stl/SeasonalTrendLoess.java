@@ -67,6 +67,14 @@ public class SeasonalTrendLoess {
 			}
 		}
 
+		/**
+		 * Set the period length for the STL seasonal decomposition.
+		 *
+		 * Required - no default.
+		 *
+		 * @param period
+		 * @return this
+		 */
 		public Builder setPeriodLength(int period) {
 			if (period < 2)
 				throw new IllegalArgumentException("periodicity must be at least 2");
@@ -75,78 +83,197 @@ public class SeasonalTrendLoess {
 			return this;
 		}
 
+		/**
+		 * Set the LOESS width (in data points) used to smooth the seasonal sub-series.
+		 *
+		 * Required unless setPeriodic is called.
+		 *
+		 * @param width
+		 * @return this
+		 */
 		public Builder setSeasonalWidth(int width) {
 			fSeasonalWidth = width;
 			return this;
 		}
 
+		/**
+		 * Set the LOESS degree used to smooth the seasonal sub-series.
+		 *
+		 * Defaults to 1.
+		 *
+		 * @param degree
+		 * @return this
+		 */
 		public Builder setSeasonalDegree(int degree) {
 			fSeasonalDegree = degree;
 			return this;
 		}
 
+		/**
+		 * Set the jump (number of points to skip) between LOESS interpolations when smoothing the seasonal sub-series.
+		 *
+		 * Defaults to 10% of the smoother width.
+		 *
+		 * @param jump
+		 * @return this
+		 */
 		public Builder setSeasonalJump(int jump) {
 			fSeasonalJump = jump;
 			return this;
 		}
 
+		/**
+		 * Set the LOESS width (in data points) used to smooth the trend.
+		 *
+		 * Defaults to (int) (1.5 * periodLength / (1 - 1.5 / seasonalWidth) + 0.5)
+		 *
+		 * @param width
+		 * @return this
+		 */
 		public Builder setTrendWidth(int width) {
 			fTrendWidth = width;
 			return this;
 		}
 
+		/**
+		 * Set the LOESS degree used to smooth the trend.
+		 *
+		 * Defaults to 1.
+		 *
+		 * @param degree
+		 * @return this
+		 */
 		public Builder setTrendDegree(int degree) {
 			fTrendDegree = degree;
 			return this;
 		}
 
+		/**
+		 * Set the jump (number of points to skip) between LOESS interpolations used when smoothing the trend.
+		 *
+		 * Defaults to 10% of the smoother width.
+		 *
+		 * @param jump
+		 * @return this
+		 */
 		public Builder setTrendJump(int jump) {
 			fTrendJump = jump;
 			return this;
 		}
 
+		/**
+		 * Set the LOESS width (in data points) used by the low-pass filter step.
+		 *
+		 * Defaults to the period length.
+		 *
+		 * @param width
+		 * @return this
+		 */
 		public Builder setLowpassWidth(int width) {
 			fLowpassWidth = width;
 			return this;
 		}
 
+		/**
+		 * Set the LOESS degree used by the low-pass filter step.
+		 *
+		 * Defaults to 1.
+		 *
+		 * @param degree
+		 * @return this
+		 */
 		public Builder setLowpassDegree(int degree) {
 			fLowpassDegree = degree;
 			return this;
 		}
 
+		/**
+		 * Set the jump (number of points to skip) between LOESS interpolations used by the low-pass filter step.
+		 *
+		 * Defaults to 10% of the smoother width.
+		 *
+		 * @param jump
+		 * @return this
+		 */
 		public Builder setLowpassJump(int jump) {
 			fLowpassJump = jump;
 			return this;
 		}
 
+		/**
+		 * Set the number of STL inner iterations.
+		 *
+		 * Required, but also set by setRobust, setNonRobust, setRobustFlag.
+		 *
+		 * @param ni
+		 * @return this
+		 */
 		public Builder setInnerIterations(int ni) {
 			fInnerIterations = ni;
 			return this;
 		}
 
+		/**
+		 * Set the number of STL robustness (outer) iterations.
+		 *
+		 * Required, but also set by setRobust, setNonRobust, setRobustFlag.
+		 *
+		 * @param no
+		 * @return this
+		 */
 		public Builder setRobustnessIterations(int no) {
 			fRobustIterations = no;
 			return this;
 		}
 
+		/**
+		 * Set the default robust STL iteration counts (15 robustness iterations, 1 inner iteration).
+		 *
+		 * @return this
+		 */
 		public Builder setRobust() {
 			fInnerIterations = 1;
 			fRobustIterations = 15;
 			return this;
 		}
 
+		/**
+		 * Set the default non-robust STL iteration counts (0 robustness iterations, 2 inner iterations).
+		 *
+		 * @return this
+		 */
 		public Builder setNonRobust() {
 			fInnerIterations = 2;
 			fRobustIterations = 0;
 			return this;
 		}
 
+		/**
+		 * Set the robustness according to a flag; e.g. setRobust if true, setNonRobust if false.
+		 *
+		 * @param robust
+		 * @return this
+		 */
+		public Builder setRobustFlag(boolean robust) {
+			return robust ? setRobust() : setNonRobust();
+		}
+
+		/**
+		 * Constrain the seasonal component to be exactly periodic.
+		 *
+		 * @return this
+		 */
 		public Builder setPeriodic() {
 			fPeriodic = true;
 			return this;
 		}
 
+		/**
+		 * Construct the smoother.
+		 *
+		 * @param data the data to be smoothed
+		 * @return a new SeasonalTrendLoess object
+		 */
 		public SeasonalTrendLoess buildSmoother(double[] data) {
 			sanityCheck(data);
 
@@ -253,6 +380,7 @@ public class SeasonalTrendLoess {
 				.setDegree(seasonalSettings.getDegree()) //
 				.setJump(seasonalSettings.getJump()) //
 				.setDataLength(size) //
+				.extrapolateForwardAndBack(1) //
 				.setPeriodicity(periodicity).build();
 
 		fDetrend = new double[size];
@@ -321,6 +449,9 @@ public class SeasonalTrendLoess {
 		return stl.decompose();
 	}
 
+	/**
+	 * Simple class to hold the results of the STL decomposition.
+	 */
 	public static class Decomposition {
 
 		private final double[] fData;
@@ -329,6 +460,13 @@ public class SeasonalTrendLoess {
 		private final double[] fResiduals;
 		private final double[] fWeights;
 
+		/**
+		 * Initialize Decomposition object from the original data.
+		 *
+		 * Allocates space for the decomposition and initializes the weights to 1.
+		 *
+		 * @param data
+		 */
 		Decomposition(double[] data) {
 			fData = data;
 

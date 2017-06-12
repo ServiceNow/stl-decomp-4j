@@ -26,19 +26,31 @@ public class CyclicSubSeriesSmoother {
 	 * Use Builder to simplify complex construction patterns.
 	 */
 	public static class Builder {
-		private int fWidth;
+		private Integer fWidth = null;
+		private Integer fDataLength = null;
+		private Integer fPeriodicity = null;
+		private Integer fNumPeriodsBackward = null;
+		private Integer fNumPeriodsForward = null;
 		private int fDegree = 1;
 		private int fJump = 1;
-		private int fDataLength;
-		private int fPeriodicity;
-		private int fNumPeriodsBackward = 1;
-		private int fNumPeriodsForward = 1;
 
+		/**
+		 * Set the width of the LOESS smoother used to smooth each seasonal sub-series.
+		 *
+		 * @param width
+		 * @return this
+		 */
 		public Builder setWidth(int width) {
 			fWidth = width;
 			return this;
 		}
 
+		/**
+		 * Set the degree of the LOESS smoother used to smooth each seasonal sub-series.
+		 *
+		 * @param degree
+		 * @return this
+		 */
 		public Builder setDegree(int degree) {
 			if (degree < 0 || degree > 2)
 				throw new IllegalArgumentException("Degree must be 0, 1 or 2");
@@ -47,40 +59,119 @@ public class CyclicSubSeriesSmoother {
 			return this;
 		}
 
+		/**
+		 * Set the jump (number of points to skip) between LOESS interpolations when smoothing the seasonal sub-series.
+		 *
+		 * Defaults to 1 (computes LOESS interpolation at each point).
+		 *
+		 * @param jump
+		 * @return this
+		 */
 		public Builder setJump(int jump) {
 			fJump = jump;
 			return this;
 		}
 
+		/**
+		 * Set the total length of the data that will be deconstructed into cyclic sub-series.
+		 *
+		 * @param dataLength
+		 * @return this
+		 */
 		public Builder setDataLength(int dataLength) {
 			fDataLength = dataLength;
 			return this;
 		}
 
+		/**
+		 * Set the period of the data's seasonality.
+		 *
+		 * @param periodicity
+		 * @return this
+		 */
 		public Builder setPeriodicity(int periodicity) {
 			fPeriodicity = periodicity;
 			return this;
 		}
 
+		/**
+		 * Construct a smoother that will extrapolate forward only by the specified number of periods.
+		 *
+		 * @param periods
+		 * @return this
+		 */
 		public Builder extrapolateForwardOnly(int periods) {
 			fNumPeriodsForward = periods;
 			fNumPeriodsBackward = 0;
 			return this;
 		}
 
+		/**
+		 * Construct a smoother that extrapolates forward and backward by the specified number of periods.
+
+		 * @param periods
+		 * @return
+		 */
+		public Builder extrapolateForwardAndBack(int periods) {
+			fNumPeriodsForward = periods;
+			fNumPeriodsBackward = periods;
+			return this;
+		}
+
+		/**
+		 * Set the number of periods to extrapolate forward.
+		 *
+		 * Defaults to 1.
+		 *
+		 * @param periods
+		 * @return this
+		 */
 		public Builder setNumPeriodsForward(int periods) {
 			fNumPeriodsForward = periods;
 			return this;
 		}
 
+		/**
+		 * Set the number of periods to extrapolate backward.
+		 *
+		 * Defaults to 1.
+		 *
+		 * @param periods
+		 * @return this
+		 */
 		public Builder setNumPeriodsBackward(int periods) {
 			fNumPeriodsBackward = periods;
 			return this;
 		}
 
+		/**
+		 * Build the sub-series smoother.
+		 *
+		 * @return new CyclicSubSeriesSmoother
+		 */
 		public CyclicSubSeriesSmoother build() {
+			checkSanity();
+
 			return new CyclicSubSeriesSmoother(fWidth, fDegree, fJump, fDataLength, fPeriodicity,
 					fNumPeriodsBackward, fNumPeriodsForward);
+		}
+
+		private void checkSanity() {
+			if (fWidth == null)
+				throw new IllegalArgumentException(
+						"CyclicSubSeriesSmoother.Builder: setWidth must be called before building the smoother.");
+
+			if (fPeriodicity == null)
+				throw new IllegalArgumentException(
+						"CyclicSubSeriesSmoother.Builder: setPeriodicity must be called before building the smoother.");
+
+			if (fDataLength == null)
+				throw new IllegalArgumentException(
+						"CyclicSubSeriesSmoother.Builder: setDataLength must be called before building the smoother.");
+
+			if (fNumPeriodsBackward == null || fNumPeriodsForward == null)
+				throw new IllegalArgumentException(
+						"CyclicSubSeriesSmoother.Builder: Extrapolation settings must be provided.");
 		}
 	}
 

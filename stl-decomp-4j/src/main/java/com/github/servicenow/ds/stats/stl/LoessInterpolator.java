@@ -32,11 +32,23 @@ abstract class LoessInterpolator {
 		private int fDegree = 1;
 		private double[] fExternalWeights = null;
 
+		/**
+		 * Set the width of the LOESS smoother.
+		 *
+		 * @param width
+		 * @return this
+		 */
 		public Builder setWidth(int width) {
 			fWidth = width;
 			return this;
 		}
 
+		/**
+		 * Set the degree of the LOESS interpolator. Defaults to 1.
+		 *
+		 * @param degree
+		 * @return this
+		 */
 		Builder setDegree(int degree) {
 			if (degree < 0 || degree > 2)
 				throw new IllegalArgumentException("Degree must be 0, 1 or 2");
@@ -45,11 +57,25 @@ abstract class LoessInterpolator {
 			return this;
 		}
 
+		/**
+		 * Set the external weights for interpolation.
+		 *
+		 * Not required - null is equivalent to all weights being 1.
+		 *
+		 * @param weights
+		 * @return this
+		 */
 		Builder setExternalWeights(double[] weights) {
 			fExternalWeights = weights;
 			return this;
 		}
 
+		/**
+		 * Create a LoessInterpolator for interpolating the given data array.
+		 *
+		 * @param data
+		 * @return new LoessInterpolator
+		 */
 		LoessInterpolator interpolate(double[] data) {
 			if (fWidth == null)
 				throw new IllegalStateException("LoessInterpolator.Builder: Width must be set");

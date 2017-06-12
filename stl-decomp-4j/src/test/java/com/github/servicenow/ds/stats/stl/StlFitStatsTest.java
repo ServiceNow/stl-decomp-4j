@@ -92,7 +92,7 @@ public class StlFitStatsTest {
 
 		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.0, 0.0, seed); // sin(2 \pi i / 12)
 
-		final Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setNonRobust();
+		final Builder builder = new Builder().setPeriodLength(12).setSeasonalWidth(7).setRobustFlag(false);
 		SeasonalTrendLoess smoother = builder.buildSmoother(data);
 
 		Decomposition stl = smoother.decompose();

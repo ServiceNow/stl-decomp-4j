@@ -23,11 +23,25 @@ public class LoessSmoother {
 		private double[] fExternalWeights = null;
 		private double[] fData = null;
 
+		/**
+		 * Set the width of the LOESS smoother.
+		 *
+		 * @param width
+		 * @return this
+		 */
 		public Builder setWidth(int width) {
 			fWidth = width;
 			return this;
 		}
 
+		/**
+		 * Set the degree of the LOESS smoother.
+		 *
+		 * Defaults to 1.
+		 *
+		 * @param degree
+		 * @return this
+		 */
 		public Builder setDegree(int degree) {
 			if (degree < 0 || degree > 2)
 				throw new IllegalArgumentException("Degree must be 0, 1 or 2");
@@ -36,21 +50,48 @@ public class LoessSmoother {
 			return this;
 		}
 
+		/**
+		 * Set the jump (number of points to skip) between LOESS interpolations.
+		 *
+		 * Defaults to 1 (computes LOESS interpolation at each point).
+		 *
+		 * @param jump
+		 * @return this
+		 */
 		public Builder setJump(int jump) {
 			fJump = jump;
 			return this;
 		}
 
+		/**
+		 * Set the external weights for interpolation.
+		 *
+		 * Not required - null is equivalent to all weights being 1.
+		 *
+		 * @param weights
+		 * @return this
+		 */
 		public Builder setExternalWeights(double[] weights) {
 			fExternalWeights = weights;
 			return this;
 		}
 
+		/**
+		 * Set the data to be smoothed.
+		 *
+		 * @param data
+		 * @return this
+		 */
 		public Builder setData(double[] data) {
 			fData = data;
 			return this;
 		}
 
+		/**
+		 * Build the LoessSmoother.
+		 *
+		 * @return new LoessSmoother
+		 */
 		public LoessSmoother build() {
 			if (fWidth == null)
 				throw new IllegalStateException("LoessSmoother.Builder: Width must be set before calling build");

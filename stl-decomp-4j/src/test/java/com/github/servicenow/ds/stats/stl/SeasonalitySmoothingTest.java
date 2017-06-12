@@ -43,7 +43,7 @@ public class SeasonalitySmoothingTest {
 		double[] extendedSeasonal = new double[seasonal.length + 2 * periodicity];
 
 		final CyclicSubSeriesSmoother.Builder csBuilder = new CyclicSubSeriesSmoother.Builder().setWidth(2001);
-		csBuilder.setDataLength(seasonal.length).setPeriodicity(periodicity);
+		csBuilder.setDataLength(seasonal.length).setPeriodicity(periodicity).extrapolateForwardAndBack(1);
 		CyclicSubSeriesSmoother seasonal_smoother = csBuilder.build();
 
 		seasonal_smoother.smoothSeasonal(seasonal, extendedSeasonal, null);
