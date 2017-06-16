@@ -79,6 +79,8 @@ public class LoessSmoother {
 		/**
 		 * Set the data to be smoothed.
 		 *
+		 * Note that smoothing does not modify this data.
+		 *
 		 * @param data
 		 * @return this
 		 */
