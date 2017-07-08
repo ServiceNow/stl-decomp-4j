@@ -289,4 +289,39 @@ public class StlFitStatsTest {
 				smoothedStats.getSeasonalZScore() < 3.0); // TODO: A better seasonal Z-Score
 	}
 
+	@Test
+	public void StlStatsLogLikelihoodTest() {
+
+		int periodicity = 168;
+		Builder builder = new Builder().setPeriodLength(periodicity).setSeasonalWidth(2001);
+		builder.setInnerIterations(1).setRobustnessIterations(15);
+
+		SeasonalTrendLoess smoother = builder.buildSmoother(testDataGenerator.values);
+
+		Decomposition stl = smoother.decompose();
+
+		StlFitStats stats = new StlFitStats(stl);
+
+		double ll = stats.getResidualLogLikelihood();
+
+		double r2sum = 0;
+		for (double r : stl.getResidual())
+			r2sum += r * r;
+
+		int N = stl.getResidual().length;
+
+		double varMLE = r2sum / N;
+
+		double ll0 = - 0.5 * N * (1 + Math.log(2 * Math.PI * varMLE));
+
+		assertEquals(ll0, ll, 1.0e-14);
+
+		double s0 = Math.sqrt(varMLE);
+
+		double dp = ll - stats.getResidualLogLikelihood((1 + .0000001) * s0);
+		double dm = ll - stats.getResidualLogLikelihood((1 - .0000001) * s0);
+
+		assertTrue("Max LL test", dp > 0.0);
+		assertTrue("Max LL test", dm > 0.0);
+	}
 }

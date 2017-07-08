@@ -44,7 +44,7 @@ public class SeasonalTrendLoess {
 
 		private Integer fTrendWidth = null;
 		private Integer fTrendJump = null;
-		private int fTrendDegree = 1;
+		private Integer fTrendDegree = null;
 
 		private Integer fLowpassWidth = null;
 		private Integer fLowpassJump = null;
@@ -58,6 +58,8 @@ public class SeasonalTrendLoess {
 		// Following the R interface, we implement a "periodic" flag that defaults to false.
 
 		private boolean fPeriodic = false;
+		private boolean fFlatTrend = false;
+		private boolean fLinearTrend = false;
 
 		private LoessSettings buildSettings(int width, int degree, Integer jump) {
 			if (jump == null) {
@@ -269,6 +271,28 @@ public class SeasonalTrendLoess {
 		}
 
 		/**
+		 * Set the trend smoother force a flat trend. (Degree == 0, Large Loess Width)
+		 *
+		 * @return this
+		 */
+		public Builder setFlatTrend() {
+			fLinearTrend = false;
+			fFlatTrend = true;
+			return this;
+		}
+
+		/**
+		 * Set the trend smoother force a linear trend. (Degree == 1, Large Loess Width)
+		 *
+		 * @return this
+		 */
+		public Builder setLinearTrend() {
+			fFlatTrend = false;
+			fLinearTrend = true;
+			return this;
+		}
+
+		/**
 		 * Construct the smoother.
 		 *
 		 * @param data the data to be smoothed
@@ -285,6 +309,16 @@ public class SeasonalTrendLoess {
 			}
 
 			LoessSettings seasonalSettings = buildSettings(fSeasonalWidth, fSeasonalDegree, fSeasonalJump);
+
+			if (fFlatTrend) {
+				fTrendWidth = 100 * fPeriodLength * data.length;
+				fTrendDegree = 0;
+			} else if (fLinearTrend) {
+				fTrendWidth = 100 * fPeriodLength * data.length;
+				fTrendDegree = 1;
+			} else if (fTrendDegree == null) {
+				fTrendDegree = 1;
+			}
 
 			if (fTrendWidth == null)
 				fTrendWidth = calcDefaultTrendWidth(fPeriodLength, fSeasonalWidth);
@@ -310,6 +344,14 @@ public class SeasonalTrendLoess {
 				throw new IllegalArgumentException(
 						"SeasonalTrendLoess.Builder: Data array must be non-null");
 
+			if (fPeriodLength == null)
+				throw new IllegalArgumentException(
+						"SeasonalTrendLoess.Builder: Period Length must be specified");
+
+			if (data.length < 2 * fPeriodLength)
+				throw new IllegalArgumentException(
+						"SeasonalTrendLoess.Builder: Data series must be at least 2 * periodicity in length");
+
 			if (fPeriodic) {
 				if (fSeasonalWidth != null)
 					throw new IllegalArgumentException(
@@ -328,13 +370,19 @@ public class SeasonalTrendLoess {
 							"SeasonalTrendLoess.Builder: setSeasonalWidth or setPeriodic must be called.");
 			}
 
-			if (fPeriodLength == null)
-				throw new IllegalArgumentException(
-						"SeasonalTrendLoess.Builder: Period Length must be specified");
+			if (fFlatTrend || fLinearTrend) {
+				if (fTrendWidth != null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setTrendWidth incompatible with flat/linear trend.");
 
-			if (data.length < 2 * fPeriodLength)
-				throw new IllegalArgumentException(
-						"SeasonalTrendLoess.Builder: Data series must be at least 2 * periodicity in length");
+				if (fTrendDegree != null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setTrendDegree incompatible with flat/linear trend.");
+
+				if (fTrendJump != null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setTrendJump incompatible with flat/linear trend.");
+			}
 		}
 	}
 

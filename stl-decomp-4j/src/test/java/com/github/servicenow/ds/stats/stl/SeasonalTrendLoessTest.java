@@ -214,6 +214,48 @@ public class SeasonalTrendLoessTest {
 	}
 
 	@Test
+	public void linearTrendTest() {
+		long seed = 1234567L; // System.nanoTime() // change this to do random stress test
+
+		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.2, 0.1, seed);
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder().setLinearTrend().setPeriodLength(12).setSeasonalWidth(1000000).setRobust();
+
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = smoother.decompose();
+
+		double[] trend = stl.getTrend();
+
+		double dt = trend[1] - trend[0];
+		for (int i = 1; i < trend.length; ++i)
+			assertEquals(dt, trend[i] - trend[i-1], 1.0e-14);
+
+		double dx = 2 * Math.PI / 12;
+
+		assertEquals(dt, 0.2 * dx, 1.0e-4);
+	}
+
+
+	@Test
+	public void flatTrendTest() {
+		long seed = 1234567L; // System.nanoTime() // change this to do random stress test
+
+		double[] data = testDataGenerator.createNoisySeasonalData(144, 12, 1.0, 0.0, 0.1, seed);
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder().setFlatTrend().setPeriodLength(12).setSeasonalWidth(1000000).setRobust();
+
+		SeasonalTrendLoess smoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = smoother.decompose();
+
+		double[] trend = stl.getTrend();
+
+		for (int i = 1; i < trend.length; ++i)
+			assertEquals(0.0, trend[i] - trend[i-1], 1.0e-13);
+	}
+
+	@Test
 	public void sineWithOutlierTest() {
 
 		long seed = 1234567L; // System.nanoTime() // change this to do random stress test
@@ -311,17 +353,51 @@ public class SeasonalTrendLoessTest {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void setPeriodicDisallowsSeasonalWidth() {
-		new SeasonalTrendLoess.Builder().setPeriodic().setSeasonalWidth(999).buildSmoother(new double[2000]);
+		getTestBuilder().setSeasonalWidth(999).buildSmoother(new double[2000]);
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void setPeriodicDisallowsSeasonalJump() {
-		new SeasonalTrendLoess.Builder().setPeriodic().setSeasonalDegree(2).buildSmoother(new double[2000]);
+		getTestBuilder().setSeasonalDegree(2).buildSmoother(new double[2000]);
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void setPeriodicDisallowsSeasonalDegree() {
-		new SeasonalTrendLoess.Builder().setPeriodic().setSeasonalJump(1).buildSmoother(new double[2000]);
+		getTestBuilder().setSeasonalJump(1).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setFlatTrendDisallowsTrendWidth() {
+		getTestBuilder().setFlatTrend().setTrendWidth(999).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setFlatTrendDisallowsTrendJump() {
+		getTestBuilder().setFlatTrend().setTrendJump(1).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setFlatTrendDisallowsTrendDegree() {
+		getTestBuilder().setFlatTrend().setTrendDegree(2).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setLinearTrendDisallowsTrendWidth() {
+		getTestBuilder().setLinearTrend().setTrendWidth(999).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setLinearTrendDisallowsTrendJump() {
+		getTestBuilder().setLinearTrend().setTrendJump(1).buildSmoother(new double[2000]);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void setLinearTrendDisallowsTrendDegree() {
+		getTestBuilder().setLinearTrend().setTrendDegree(2).buildSmoother(new double[2000]);
+	}
+
+	private SeasonalTrendLoess.Builder getTestBuilder() {
+		return new SeasonalTrendLoess.Builder().setPeriodic().setPeriodLength(10);
 	}
 
 	@Ignore("For manual testing only")

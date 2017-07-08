@@ -16,11 +16,13 @@ public class StlFitStats {
 	private final double fSeasonalVariance;
 	private final double fResidualMean;
 	private final double fResidualVariance;
+	private final double fResidualLogLikelihood;
 	private final double fDeSeasonalMean;
 	private final double fDeSeasonalVariance;
 	private final double fDeTrendMean;
 	private final double fDeTrendVariance;
 	private final double fSeasonalRange;
+	private final double fResidualVarMLE;
 
 	/**
 	 * Analyze the STL decomposition, computing basic statistics for the original data and the decomposition.
@@ -107,6 +109,9 @@ public class StlFitStats {
 		fResidualVariance = residualSqSum * denomBC - fResidualMean * fResidualMean * corrBC;
 		fDeSeasonalVariance = deSeasonalSqSum * denomBC - fDeSeasonalMean * fDeSeasonalMean * corrBC;
 		fDeTrendVariance = deTrendSqSum * denomBC - fDeTrendMean * fDeTrendMean * corrBC;
+
+		fResidualVarMLE = denom * residualSqSum;
+		fResidualLogLikelihood = - 0.5 * length * (1 + Math.log(2 * Math.PI * fResidualVarMLE));
 
 		fSampleSize = length;
 	}
@@ -289,6 +294,27 @@ public class StlFitStats {
 		double resVarVar = getEstimatedVarianceOfResidualSampleVariance();
 
 		return (fDeTrendVariance - fResidualVariance) / Math.sqrt(Math.max(1.0e-12, resVarVar));
+	}
+
+	/**
+	 * Get the residual log likelihood, evaluated when the variance is the MLE variance of the residual
+	 * given that the expected residual mean is zero.
+	 *
+	 * @return log-likelihood
+	 */
+	public double getResidualLogLikelihood() {
+		return fResidualLogLikelihood;
+	}
+
+	/**
+	 * Compute the residual log likelihood of the residual with the specified standard deviation.
+	 *
+	 * @param sigma
+	 * @return
+	 */
+	public double getResidualLogLikelihood(double sigma) {
+		double var = sigma * sigma;
+		return - 0.5 * fSampleSize * (fResidualVarMLE / var + Math.log(2 * Math.PI * var));
 	}
 
 	@Override
