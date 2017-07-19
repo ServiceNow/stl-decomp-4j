@@ -28,7 +28,7 @@
 		<dependency>
 		  <groupId>com.github.servicenow.stl4j</groupId>
 		  <artifactId>stl-decomp-4j</artifactId>
-		  <version>1.0.1</version>
+		  <version>1.0.2</version>
 		</dependency>
 	</dependencies>
 	<profiles>
