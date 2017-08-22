@@ -637,6 +637,8 @@ public class SeasonalTrendLoess {
 			LoessSmoother seasonalSmoother = builder.setData(fSeasonal).build();
 			double[] smoothedSeasonal = seasonalSmoother.smooth();
 
+			// TODO: Calculate the variance reduction in smoothing the seasonal.
+
 			// Update the seasonal with the smoothed values.
 
 			// Restore the end-point values as the smoother will tend to over-modify these.
