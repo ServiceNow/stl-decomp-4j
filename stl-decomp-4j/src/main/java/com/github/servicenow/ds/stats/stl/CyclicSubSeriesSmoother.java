@@ -2,7 +2,7 @@ package com.github.servicenow.ds.stats.stl;
 
 /**
  * Encapsulate the complexity of smoothing the cyclic sub-series in a separate class.
- *
+ * <p>
  * Created by Jim Crotinger on 13-May-2016.
  */
 @SuppressWarnings("WeakerAccess")
@@ -37,7 +37,7 @@ public class CyclicSubSeriesSmoother {
 		/**
 		 * Set the width of the LOESS smoother used to smooth each seasonal sub-series.
 		 *
-		 * @param width
+		 * @param width width of the LOESS smoother
 		 * @return this
 		 */
 		public Builder setWidth(int width) {
@@ -48,7 +48,7 @@ public class CyclicSubSeriesSmoother {
 		/**
 		 * Set the degree of the LOESS smoother used to smooth each seasonal sub-series.
 		 *
-		 * @param degree
+		 * @param degree degree of the LOESS smoother
 		 * @return this
 		 */
 		public Builder setDegree(int degree) {
@@ -61,10 +61,10 @@ public class CyclicSubSeriesSmoother {
 
 		/**
 		 * Set the jump (number of points to skip) between LOESS interpolations when smoothing the seasonal sub-series.
-		 *
+		 * <p>
 		 * Defaults to 1 (computes LOESS interpolation at each point).
 		 *
-		 * @param jump
+		 * @param jump jump (number of points to skip) in the LOESS smoother
 		 * @return this
 		 */
 		public Builder setJump(int jump) {
@@ -75,7 +75,7 @@ public class CyclicSubSeriesSmoother {
 		/**
 		 * Set the total length of the data that will be deconstructed into cyclic sub-series.
 		 *
-		 * @param dataLength
+		 * @param dataLength total length of the data
 		 * @return this
 		 */
 		public Builder setDataLength(int dataLength) {
@@ -86,7 +86,7 @@ public class CyclicSubSeriesSmoother {
 		/**
 		 * Set the period of the data's seasonality.
 		 *
-		 * @param periodicity
+		 * @param periodicity number of data points in each season or period
 		 * @return this
 		 */
 		public Builder setPeriodicity(int periodicity) {
@@ -97,7 +97,7 @@ public class CyclicSubSeriesSmoother {
 		/**
 		 * Construct a smoother that will extrapolate forward only by the specified number of periods.
 		 *
-		 * @param periods
+		 * @param periods number of periods to extrapolate
 		 * @return this
 		 */
 		public Builder extrapolateForwardOnly(int periods) {
@@ -108,9 +108,9 @@ public class CyclicSubSeriesSmoother {
 
 		/**
 		 * Construct a smoother that extrapolates forward and backward by the specified number of periods.
-
-		 * @param periods
-		 * @return
+		 *
+		 * @param periods number of periods to extrapolate
+		 * @return this
 		 */
 		public Builder extrapolateForwardAndBack(int periods) {
 			fNumPeriodsForward = periods;
@@ -120,10 +120,10 @@ public class CyclicSubSeriesSmoother {
 
 		/**
 		 * Set the number of periods to extrapolate forward.
-		 *
+		 * <p>
 		 * Defaults to 1.
 		 *
-		 * @param periods
+		 * @param periods number of periods to extrapolate
 		 * @return this
 		 */
 		public Builder setNumPeriodsForward(int periods) {
@@ -133,10 +133,10 @@ public class CyclicSubSeriesSmoother {
 
 		/**
 		 * Set the number of periods to extrapolate backward.
-		 *
+		 * <p>
 		 * Defaults to 1.
 		 *
-		 * @param periods
+		 * @param periods number of periods to extrapolate
 		 * @return this
 		 */
 		public Builder setNumPeriodsBackward(int periods) {
@@ -178,24 +178,17 @@ public class CyclicSubSeriesSmoother {
 	/**
 	 * Create a cyclic sub-series smoother with the specified properties.
 	 *
-	 * @param width
-	 *      - width of the LOESS smoother
-	 * @param degree
-	 *      - degree of the LOESS smoother
-	 * @param jump
-	 *      - jump to use in LOESS smoothing
-	 * @param dataLength
-	 *      - length of the input data
-	 * @param periodicity
-	 *      - length of the cyclic period
-	 * @param numPeriodsToExtrapolateBackward
-	 *      - number of periods to extrapolate backward
-	 * @param numPeriodsToExtrapolateForward
-	 *      - numbers of periods to extrapolate forward
+	 * @param width                           width of the LOESS smoother
+	 * @param degree                          degree of the LOESS smoother
+	 * @param jump                            jump to use in LOESS smoothing
+	 * @param dataLength                      length of the input data
+	 * @param periodicity                     length of the cyclic period
+	 * @param numPeriodsToExtrapolateBackward number of periods to extrapolate backward
+	 * @param numPeriodsToExtrapolateForward  numbers of periods to extrapolate forward
 	 */
 	CyclicSubSeriesSmoother(int width, int degree, int jump,
-							int dataLength, int periodicity,
-                            int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward) {
+	                        int dataLength, int periodicity,
+	                        int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward) {
 		fWidth = width;
 
 		fLoessSmootherFactory = new LoessSmoother.Builder().setWidth(width).setJump(jump).setDegree(degree);
@@ -235,12 +228,9 @@ public class CyclicSubSeriesSmoother {
 	 * Run the cyclic sub-series smoother on the specified data, with the specified weights (ignored if null). The
 	 * sub-series are reconstructed into a single series in smoothedData.
 	 *
-	 * @param rawData
-	 *            double[] input data
-	 * @param smoothedData
-	 *            double[] output data
-	 * @param weights
-	 *            double[] weights to use in the underlying interpolator; ignored if null.
+	 * @param rawData      input data
+	 * @param smoothedData output data
+	 * @param weights      weights to use in the underlying interpolator; ignored if null.
 	 */
 	public void smoothSeasonal(double[] rawData, double[] smoothedData, double[] weights) {
 		extractRawSubSeriesAndWeights(rawData, weights);
@@ -287,11 +277,11 @@ public class CyclicSubSeriesSmoother {
 	 * Use LOESS interpolation on each of the cyclic sub-series (e.g. in monthly data, smooth the Januaries, Februaries,
 	 * etc.).
 	 *
-	 * @param weights
-	 * @param rawData
-	 * @param smoothedData
+	 * @param weights      external weights for interpolation
+	 * @param rawData      input data to be smoothed
+	 * @param smoothedData output smoothed data
 	 */
-	 private void smoothOneSubSeries(double[] weights, double[] rawData, double[] smoothedData) {
+	private void smoothOneSubSeries(double[] weights, double[] rawData, double[] smoothedData) {
 
 		final int cycleLength = rawData.length;
 

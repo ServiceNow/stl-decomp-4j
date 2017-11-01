@@ -4,7 +4,7 @@ package com.github.servicenow.ds.stats.stl;
  * LoessSmoother uses LOESS interpolation to compute a smoothed data set from a regularly-spaced set of input
  * data. If a jump is specified, then LOESS interpolation is only done on every jump points and linear interpolation is
  * done to fill in the gaps.
- *
+ * <p>
  * Author: Jim Crotinger, ported from the original RATFOR source from netlib
  */
 @SuppressWarnings("WeakerAccess")
@@ -26,7 +26,7 @@ public class LoessSmoother {
 		/**
 		 * Set the width of the LOESS smoother.
 		 *
-		 * @param width
+		 * @param width width of the LOESS smoother
 		 * @return this
 		 */
 		public Builder setWidth(int width) {
@@ -36,10 +36,10 @@ public class LoessSmoother {
 
 		/**
 		 * Set the degree of the LOESS smoother.
-		 *
+		 * <p>
 		 * Defaults to 1.
 		 *
-		 * @param degree
+		 * @param degree degree of the LOESS smoother
 		 * @return this
 		 */
 		public Builder setDegree(int degree) {
@@ -52,10 +52,10 @@ public class LoessSmoother {
 
 		/**
 		 * Set the jump (number of points to skip) between LOESS interpolations.
-		 *
+		 * <p>
 		 * Defaults to 1 (computes LOESS interpolation at each point).
 		 *
-		 * @param jump
+		 * @param jump number of points to skip
 		 * @return this
 		 */
 		public Builder setJump(int jump) {
@@ -65,10 +65,10 @@ public class LoessSmoother {
 
 		/**
 		 * Set the external weights for interpolation.
-		 *
+		 * <p>
 		 * Not required - null is equivalent to all weights being 1.
 		 *
-		 * @param weights
+		 * @param weights external weights for interpolation
 		 * @return this
 		 */
 		public Builder setExternalWeights(double[] weights) {
@@ -78,10 +78,10 @@ public class LoessSmoother {
 
 		/**
 		 * Set the data to be smoothed.
-		 *
+		 * <p>
 		 * Note that smoothing does not modify this data.
 		 *
-		 * @param data
+		 * @param data input data to be smoothed
 		 * @return this
 		 */
 		public Builder setData(double[] data) {
@@ -113,16 +113,11 @@ public class LoessSmoother {
 	 * Create a LoessSmoother for the given data set with the specified smoothing width and optional external
 	 * Weights.
 	 *
-	 * @param width
-	 *            int approximate width the width of the neighborhood weighting function
-	 * @param jump
-	 *            int smoothing jump - only ever jump points are smoothed by LOESS with linear interpolation in between.
-	 * @param degree
-	 *            int 1 for linear regression, 0 for simple weighted average
-	 * @param data
-	 *            double[] underlying data set that is being smoothed
-	 * @param externalWeights
-	 *            double[] additional weights to apply in the smoothing. Ignored if null.
+	 * @param width           approximate width the width of the neighborhood weighting function
+	 * @param jump            smoothing jump - only ever jump points are smoothed by LOESS with linear interpolation in between.
+	 * @param degree          1 for linear regression, 0 for simple weighted average
+	 * @param data            underlying data set that is being smoothed
+	 * @param externalWeights additional weights to apply in the smoothing. Ignored if null.
 	 */
 	private LoessSmoother(int width, int jump, int degree, double[] data, double[] externalWeights) {
 		final LoessInterpolator.Builder b = new LoessInterpolator.Builder();
