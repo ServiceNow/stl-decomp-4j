@@ -309,8 +309,8 @@ public class StlFitStats {
 	/**
 	 * Compute the residual log likelihood of the residual with the specified standard deviation.
 	 *
-	 * @param sigma
-	 * @return
+	 * @param sigma standard deviation
+	 * @return residual log-likelihood
 	 */
 	public double getResidualLogLikelihood(double sigma) {
 		double var = sigma * sigma;
