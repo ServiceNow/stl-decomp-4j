@@ -180,7 +180,7 @@ abstract class LoessInterpolator {
 		// (The paper does this by multiplying the above lambda by (width / n). Not sure why the code is different.)
 
 		if (fWidth > fData.length)
-			lambda += (fWidth - fData.length) / 2;
+			lambda += (double) ((fWidth - fData.length) / 2);
 
 		// "Neighborhood" is computed somewhat fuzzily.
 

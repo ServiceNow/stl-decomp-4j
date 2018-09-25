@@ -711,7 +711,7 @@ public class SeasonalTrendLoess {
 	}
 
 	/**
-	 * The lowpass calculation takes the extended seasonal results and smoothes them with three moving averages and a
+	 * The lowpass calculation takes the extended seasonal results and smooths them with three moving averages and a
 	 * LOESS smoother to remove the seasonality.
 	 */
 	private void removeSeasonality() {
