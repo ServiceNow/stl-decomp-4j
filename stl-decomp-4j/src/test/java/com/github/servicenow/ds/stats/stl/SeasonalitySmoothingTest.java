@@ -1,6 +1,8 @@
 package com.github.servicenow.ds.stats.stl;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -11,6 +13,7 @@ import org.junit.Test;
 
 public class SeasonalitySmoothingTest {
 
+	public static final double EPS = 1.0e-15;
 	private final StlTestDataGenerator fTestData = new StlTestDataGenerator();
 
 	@Test
@@ -80,6 +83,114 @@ public class SeasonalitySmoothingTest {
 		assertTrue(baseStats.getMin() < smoothedStats.getMin());
 		assertTrue(baseStats.getMax() > smoothedStats.getMax());
 		assertTrue(baseStats.getStandardDeviation() > 0.5 * smoothedStats.getStandardDeviation());
+	}
+
+	@Test
+	public void seasonalSmootherMinimalWidthTest() {
+		final double[] data = fTestData.values;
+
+		int periodicity = 168;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder().setPeriodLength(periodicity).setSeasonalWidth(2001);
+		builder.setInnerIterations(1).setRobustnessIterations(15);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		double[] trend = stl.getTrend().clone();
+		double[] seasonal = stl.getSeasonal().clone(); // Make a copy
+		double[] residuals = stl.getResidual().clone();
+
+		stl.smoothSeasonal(3, false);
+
+		for (int i = 1; i < seasonal.length - 1; ++i) {
+			assertEquals("Smoothing with width 3 should have no effect", seasonal[i], stl.getSeasonal()[i], EPS);
+			assertEquals("Smoothing with width 3 should have no effect", trend[i], stl.getTrend()[i], EPS);
+			assertEquals("Smoothing with width 3 should have no effect", residuals[i], stl.getResidual()[i], 10 * EPS);
+		}
+
+		assertNotEquals(seasonal[0], stl.getSeasonal()[0], EPS);
+		assertNotEquals(seasonal[seasonal.length - 1], stl.getSeasonal()[seasonal.length - 1], EPS);
+	}
+
+	@Test
+	public void seasonalSmootherMinimalWidthNoEndpointFixTest() {
+		final double[] data = fTestData.values;
+
+		int periodicity = 168;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder().setPeriodLength(periodicity).setSeasonalWidth(2001);
+		builder.setInnerIterations(1).setRobustnessIterations(15);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		double[] trend = stl.getTrend().clone();
+		double[] seasonal = stl.getSeasonal().clone(); // Make a copy
+		double[] residuals = stl.getResidual().clone();
+
+		stl.smoothSeasonal(3, true);
+
+		assertArrayEquals("Smoothing with width 3 should have no effect", seasonal, stl.getSeasonal(), EPS);
+		assertArrayEquals("Smoothing with width 3 should have no effect", trend, stl.getTrend(), EPS);
+		assertArrayEquals("Smoothing with width 3 should have no effect", residuals, stl.getResidual(), 10 * EPS);
+	}
+
+	@Test
+	public void seasonalSmootherWidth4Test() {
+		SeasonalTrendLoess.Decomposition stl5 = getTestDecompositionWithSmootherWidth(5);
+		SeasonalTrendLoess.Decomposition stl4 = getTestDecompositionWithSmootherWidth(4);
+
+		compareDecompositions("Width 4 should be reset to 5", stl5, stl4);
+	}
+
+	@Test
+	public void seasonalSmootherWidth2Test() {
+		SeasonalTrendLoess.Decomposition stl3 = getTestDecompositionWithSmootherWidth(3);
+		SeasonalTrendLoess.Decomposition stl2 = getTestDecompositionWithSmootherWidth(2);
+
+		compareDecompositions("Width 2 should be reset to 3", stl3, stl2);
+	}
+
+	@Test
+	public void seasonalSmootherWidth1Test() {
+		SeasonalTrendLoess.Decomposition stl3 = getTestDecompositionWithSmootherWidth(3);
+		SeasonalTrendLoess.Decomposition stl1 = getTestDecompositionWithSmootherWidth(1);
+
+		compareDecompositions("Width 1 should be reset to 3", stl3, stl1);
+	}
+
+	@Test
+	public void seasonalSmootherWidth0Test() {
+		SeasonalTrendLoess.Decomposition stl3 = getTestDecompositionWithSmootherWidth(3);
+		SeasonalTrendLoess.Decomposition stl0 = getTestDecompositionWithSmootherWidth(0);
+
+		compareDecompositions("Width 0 should be reset to 3", stl3, stl0);
+	}
+
+	private void compareDecompositions(
+			String message, SeasonalTrendLoess.Decomposition expected, SeasonalTrendLoess.Decomposition actual) {
+		assertArrayEquals(message, expected.getSeasonal(), actual.getSeasonal(), EPS);
+		assertArrayEquals(message, expected.getTrend(), actual.getTrend(), EPS);
+		assertArrayEquals(message, expected.getResidual(), actual.getResidual(), 10 * EPS);
+	}
+
+	private SeasonalTrendLoess.Decomposition getTestDecompositionWithSmootherWidth(int width) {
+		final double[] data = fTestData.values;
+
+		int periodicity = 168;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder().setPeriodLength(periodicity).setSeasonalWidth(2001);
+		builder.setInnerIterations(1).setRobustnessIterations(15);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		stl.smoothSeasonal(width, true);
+		return stl;
 	}
 
 	@Ignore("Not really a test - used to generate data for comparison with python")

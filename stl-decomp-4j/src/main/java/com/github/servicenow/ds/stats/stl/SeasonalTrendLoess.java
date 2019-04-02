@@ -625,6 +625,23 @@ public class SeasonalTrendLoess {
 		 * @param width the width of the LOESS smoother used to smooth the seasonal component.
 		 */
 		public void smoothSeasonal(int width) {
+			smoothSeasonal(width, true);
+		}
+
+		/**
+		 * Smooth the STL seasonal component with quadratic LOESS and recompute the residual.
+		 *
+		 * @param width the width of the LOESS smoother used to smooth the seasonal component.
+		 * @param restoreEndPoints whether to restore the endpoints to their original values
+		 */
+		public void smoothSeasonal(int width, boolean restoreEndPoints) {
+
+			// Ensure that LOESS smoother width is odd and >= 3.
+
+			width = Math.max(3, width);
+			if (width % 2 == 0)
+				++width;
+
 			// Quadratic smoothing of the seasonal component.
 			// Do NOT perform linear interpolation between smoothed points - the quadratic spline can accommodate
 			// sharp changes and linear interpolation would cut off peaks/valleys.
@@ -640,14 +657,19 @@ public class SeasonalTrendLoess {
 
 			// Update the seasonal with the smoothed values.
 
+			// TODO: This is not very good - it causes discontinuities a the endpoints.
+			//       Better to transition to linear in the last half-smoother width.
+
 			// Restore the end-point values as the smoother will tend to over-modify these.
 
 			double s0 = fSeasonal[0];
 			double sN = fSeasonal[fSeasonal.length - 1];
 			System.arraycopy(smoothedSeasonal, 0, fSeasonal, 0, smoothedSeasonal.length);
 
-			fSeasonal[0] = s0;
-			fSeasonal[fSeasonal.length - 1] = sN;
+			if (restoreEndPoints) {
+				fSeasonal[0] = s0;
+				fSeasonal[fSeasonal.length - 1] = sN;
+			}
 
 			for (int i = 0; i < smoothedSeasonal.length; ++i)
 				fResiduals[i] = fData[i] - fTrend[i] - fSeasonal[i];
