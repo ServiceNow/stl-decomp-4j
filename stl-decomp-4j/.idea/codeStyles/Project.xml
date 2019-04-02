@@ -6,7 +6,7 @@
         <option name="SMART_TABS" value="true" />
       </value>
     </option>
-    <JSCodeStyleSettings>
+    <JSCodeStyleSettings version="0">
       <option name="SPACE_BEFORE_FUNCTION_LEFT_PARENTH" value="false" />
     </JSCodeStyleSettings>
     <JavaCodeStyleSettings>
