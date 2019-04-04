@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Integration tests for SeasonalTrendLoess (STL) decomposition.
@@ -323,6 +324,99 @@ public class SeasonalTrendLoessTest {
 			assertEquals(String.format("residuals[%d]", i), fRobustNoisySinusoidResults[i][3], residuals[i],
 					epsilon);
 		}
+	}
+
+	@Test
+	public void periodicBuilderCanBeReused() {
+		double[] data = SimulatedWeeklyMetric.getFourWeekValues();
+
+		int periodicity = 1008;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
+
+		builder.setPeriodLength(periodicity)
+				.setRobust()
+				.setPeriodic()
+				.setFlatTrend();
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+
+		builder.setRobustnessIterations(17);
+
+		// Previously this resulted in an exception:
+		// SeasonalTrendLoess.Builder: setSeasonalWidth and setPeriodic cannot both be called.
+
+		stlSmoother = builder.buildSmoother(data);
+
+		stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+	}
+
+	@Test
+	public void linearTrendBuilderCanBeReused() {
+		double[] data = SimulatedWeeklyMetric.getFourWeekValues();
+
+		int periodicity = 1008;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
+
+		builder.setPeriodLength(periodicity)
+				.setRobust()
+				.setLinearTrend()
+				.setSeasonalWidth(101);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+
+		builder.setRobustnessIterations(17);
+
+		// Previously this resulted in an exception:
+		// SeasonalTrendLoess.Builder: setTrendWidth incompatible with flat/linear trend.
+
+		stlSmoother = builder.buildSmoother(data);
+
+		stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+	}
+
+	@Test
+	public void flatTrendBuilderCanBeReused() {
+		double[] data = SimulatedWeeklyMetric.getFourWeekValues();
+
+		int periodicity = 1008;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
+
+		builder.setPeriodLength(periodicity)
+				.setRobust()
+				.setFlatTrend()
+				.setSeasonalWidth(101);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+
+		builder.setRobustnessIterations(17);
+
+		// Previously this resulted in an exception:
+		// SeasonalTrendLoess.Builder: setTrendWidth incompatible with flat/linear trend.
+
+		stlSmoother = builder.buildSmoother(data);
+
+		stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
 	}
 
 	@Test(expected=IllegalArgumentException.class)
