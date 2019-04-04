@@ -76,7 +76,7 @@ public class RobustFitIssueTest {
 
 		assert data.length == 4032;
 
-		int periodicity = 1008; // Exactly half the data
+		int periodicity = 1008;
 
 		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
 
