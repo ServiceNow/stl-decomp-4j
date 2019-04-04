@@ -665,7 +665,6 @@ public class SeasonalTrendLoess {
 		 *
 		 * @param width             the width of the LOESS smoother used to smooth the seasonal component.
 		 * @param restoreEndPoints  whether to restore the endpoints to their original values
-		 * @param useWeights        whether to use the STL weights in the seasonal smoothing
 		 */
 		public void smoothSeasonal(int width, boolean restoreEndPoints) {
 

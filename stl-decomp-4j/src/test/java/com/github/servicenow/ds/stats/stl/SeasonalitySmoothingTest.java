@@ -17,7 +17,7 @@ public class SeasonalitySmoothingTest {
 	private final StlTestDataGenerator fTestData = new StlTestDataGenerator();
 
 	@Test
-	public void smoothSeasonalityTest() throws IOException {
+	public void smoothSeasonalityTest() {
 
 		final double[] data = fTestData.values;
 

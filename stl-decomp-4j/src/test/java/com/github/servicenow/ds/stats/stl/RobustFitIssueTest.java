@@ -1,6 +1,5 @@
 package com.github.servicenow.ds.stats.stl;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
