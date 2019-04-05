@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Integration tests for SeasonalTrendLoess (STL) decomposition.
@@ -89,11 +90,11 @@ public class SeasonalTrendLoessTest {
 	}
 
 	@Test
-	public void nonRobustRegressionTest() throws IOException {
+	public void nonRobustRegressionTest() {
 
 		// Check results against a Python/Fortran test on noisy/trendy/sinusoidal data.
 
-		double data[] = new double[144];
+		double[] data = new double[144];
 		for (int i = 0; i < data.length; ++i) {
 			data[i] = fNonRobustNoisySinusoidResults[i][0];
 		}
@@ -126,7 +127,7 @@ public class SeasonalTrendLoessTest {
 		// To force periodicity, smooth the cyclic sub-series with a zero degree polynomial and a very long window,
 		// causing it to interpolate each sub-series point at the average for the subseries.
 
-		double data[] = new double[144];
+		double[] data = new double[144];
 		for (int i = 0; i < data.length; ++i) {
 			data[i] = fNonRobustNoisySinusoidResults[i][0];
 		}
@@ -157,7 +158,7 @@ public class SeasonalTrendLoessTest {
 		// To force periodicity, smooth the cyclic sub-series with a zero degree polynomial and a very long window,
 		// causing it to interpolate each sub-series point at the average for the subseries.
 
-		double data[] = new double[144];
+		double[] data = new double[144];
 		for (int i = 0; i < data.length; ++i) {
 			data[i] = fNonRobustNoisySinusoidResults[i][0];
 		}
@@ -187,7 +188,7 @@ public class SeasonalTrendLoessTest {
 	public void forcedPeriodicityTest2() {
 		// Same as above but check results with different trend and lowpass settings.
 
-		double data[] = new double[144];
+		double[] data = new double[144];
 		for (int i = 0; i < data.length; ++i) {
 			data[i] = fNonRobustNoisySinusoidResults[i][0];
 		}
@@ -291,11 +292,11 @@ public class SeasonalTrendLoessTest {
 	}
 
 	@Test
-	public void robustRegressionTest() throws IOException {
+	public void robustRegressionTest() {
 
 		// Check results against a Python/Fortran test on noisy/trendy/sinusoidal data.
 
-		double data[] = new double[144];
+		double[] data = new double[144];
 		for (int i = 0; i < data.length; ++i) {
 			data[i] = fRobustNoisySinusoidResults[i][0];
 		}
@@ -323,6 +324,99 @@ public class SeasonalTrendLoessTest {
 			assertEquals(String.format("residuals[%d]", i), fRobustNoisySinusoidResults[i][3], residuals[i],
 					epsilon);
 		}
+	}
+
+	@Test
+	public void periodicBuilderCanBeReused() {
+		double[] data = SimulatedWeeklyMetric.getFourWeekValues();
+
+		int periodicity = 1008;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
+
+		builder.setPeriodLength(periodicity)
+				.setRobust()
+				.setPeriodic()
+				.setFlatTrend();
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+
+		builder.setRobustnessIterations(17);
+
+		// Previously this resulted in an exception:
+		// SeasonalTrendLoess.Builder: setSeasonalWidth and setPeriodic cannot both be called.
+
+		stlSmoother = builder.buildSmoother(data);
+
+		stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+	}
+
+	@Test
+	public void linearTrendBuilderCanBeReused() {
+		double[] data = SimulatedWeeklyMetric.getFourWeekValues();
+
+		int periodicity = 1008;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
+
+		builder.setPeriodLength(periodicity)
+				.setRobust()
+				.setLinearTrend()
+				.setSeasonalWidth(101);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+
+		builder.setRobustnessIterations(17);
+
+		// Previously this resulted in an exception:
+		// SeasonalTrendLoess.Builder: setTrendWidth incompatible with flat/linear trend.
+
+		stlSmoother = builder.buildSmoother(data);
+
+		stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+	}
+
+	@Test
+	public void flatTrendBuilderCanBeReused() {
+		double[] data = SimulatedWeeklyMetric.getFourWeekValues();
+
+		int periodicity = 1008;
+
+		SeasonalTrendLoess.Builder builder = new SeasonalTrendLoess.Builder();
+
+		builder.setPeriodLength(periodicity)
+				.setRobust()
+				.setFlatTrend()
+				.setSeasonalWidth(101);
+
+		SeasonalTrendLoess stlSmoother = builder.buildSmoother(data);
+
+		SeasonalTrendLoess.Decomposition stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
+
+		builder.setRobustnessIterations(17);
+
+		// Previously this resulted in an exception:
+		// SeasonalTrendLoess.Builder: setTrendWidth incompatible with flat/linear trend.
+
+		stlSmoother = builder.buildSmoother(data);
+
+		stl = stlSmoother.decompose();
+
+		assertNotNull(stl);
 	}
 
 	@Test(expected=IllegalArgumentException.class)
@@ -468,7 +562,7 @@ public class SeasonalTrendLoessTest {
 
 	@Ignore("This is just for data generation so we can compare the Java results in Python")
 	@Test
-	public void stlDataFactory() throws Exception {
+	public void stlDataFactory() {
 
 		double[] data = testDataGenerator.createNoisySeasonalDataWithTimeSeed(144, 12, 10.0, 1.0, 2.0);
 

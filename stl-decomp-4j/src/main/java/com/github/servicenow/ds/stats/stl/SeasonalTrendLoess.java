@@ -353,11 +353,17 @@ public class SeasonalTrendLoess {
 						"SeasonalTrendLoess.Builder: Data series must be at least 2 * periodicity in length");
 
 			if (fPeriodic) {
-				if (fSeasonalWidth != null)
+				int massiveWidth = 100 * data.length;
+
+				boolean periodicConsistent =
+						fSeasonalDegree != null && fSeasonalWidth != null &&
+						fSeasonalWidth ==  massiveWidth && fSeasonalDegree == 0;
+
+				if (fSeasonalWidth != null && !periodicConsistent)
 					throw new IllegalArgumentException(
 							"SeasonalTrendLoess.Builder: setSeasonalWidth and setPeriodic cannot both be called.");
 
-				if (fSeasonalDegree != null)
+				if (fSeasonalDegree != null && !periodicConsistent)
 					throw new IllegalArgumentException(
 							"SeasonalTrendLoess.Builder: setSeasonalDegree and setPeriodic cannot both be called.");
 
@@ -370,18 +376,44 @@ public class SeasonalTrendLoess {
 							"SeasonalTrendLoess.Builder: setSeasonalWidth or setPeriodic must be called.");
 			}
 
-			if (fFlatTrend || fLinearTrend) {
-				if (fTrendWidth != null)
-					throw new IllegalArgumentException(
-							"SeasonalTrendLoess.Builder: setTrendWidth incompatible with flat/linear trend.");
+			if (fFlatTrend) {
 
-				if (fTrendDegree != null)
+				int massiveWidth = 100 * fPeriodLength * data.length;
+
+				boolean flatTrendConsistent = fTrendWidth != null && fTrendDegree != null &&
+						fTrendWidth == massiveWidth && fTrendDegree == 0;
+
+				if (fTrendWidth != null && !flatTrendConsistent)
 					throw new IllegalArgumentException(
-							"SeasonalTrendLoess.Builder: setTrendDegree incompatible with flat/linear trend.");
+							"SeasonalTrendLoess.Builder: setTrendWidth incompatible with flat trend.");
+
+				if (fTrendDegree != null && !flatTrendConsistent)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setTrendDegree incompatible with flat trend.");
 
 				if (fTrendJump != null)
 					throw new IllegalArgumentException(
-							"SeasonalTrendLoess.Builder: setTrendJump incompatible with flat/linear trend.");
+							"SeasonalTrendLoess.Builder: setTrendJump incompatible with flat trend.");
+			}
+
+			if (fLinearTrend) {
+
+				int massiveWidth = 100 * fPeriodLength * data.length;
+
+				boolean linearTrendConsistent = fTrendWidth != null && fTrendDegree != null &&
+						fTrendWidth == massiveWidth && fTrendDegree == 1;
+
+				if (fTrendWidth != null && !linearTrendConsistent)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setTrendWidth incompatible with linear trend.");
+
+				if (fTrendDegree != null && !linearTrendConsistent)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setTrendDegree incompatible with linear trend.");
+
+				if (fTrendJump != null)
+					throw new IllegalArgumentException(
+							"SeasonalTrendLoess.Builder: setTrendJump incompatible with linear trend.");
 			}
 		}
 	}
@@ -622,7 +654,7 @@ public class SeasonalTrendLoess {
 		/**
 		 * Smooth the STL seasonal component with quadratic LOESS and recompute the residual.
 		 *
-		 * @param width the width of the LOESS smoother used to smooth the seasonal component.
+		 * @param width             the width of the LOESS smoother used to smooth the seasonal component.
 		 */
 		public void smoothSeasonal(int width) {
 			smoothSeasonal(width, true);
@@ -631,8 +663,8 @@ public class SeasonalTrendLoess {
 		/**
 		 * Smooth the STL seasonal component with quadratic LOESS and recompute the residual.
 		 *
-		 * @param width the width of the LOESS smoother used to smooth the seasonal component.
-		 * @param restoreEndPoints whether to restore the endpoints to their original values
+		 * @param width             the width of the LOESS smoother used to smooth the seasonal component.
+		 * @param restoreEndPoints  whether to restore the endpoints to their original values
 		 */
 		public void smoothSeasonal(int width, boolean restoreEndPoints) {
 

@@ -268,7 +268,7 @@ public class StlFitStatsTest {
 	}
 
 	@Test
-	public void noisyTrendyBadSeedTest() throws IOException {
+	public void noisyTrendyBadSeedTest() {
 
 		long seed = 16951029831410L; // 18823810773670L
 
