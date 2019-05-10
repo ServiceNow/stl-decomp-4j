@@ -4,7 +4,7 @@
   <groupId>com.github.servicenow.stl4j</groupId>
   <artifactId>stl-decomp-4j</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.5-SNAPSHOT</version>
+  <version>1.0.6-SNAPSHOT</version>
 
   <name>stl-decomp-4j</name>
   <description>Seasonal Decomposition of Time Series by Loess</description>
@@ -21,6 +21,18 @@
     <developer>
       <name>Jim Crotinger</name>
       <email>jim.crotinger@servicenow.com</email>
+      <organization>ServiceNow, Inc.</organization>
+      <organizationUrl>http://www.servicenow.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Darren Hou</name>
+      <email>darren.hou@servicenow.com</email>
+      <organization>ServiceNow, Inc.</organization>
+      <organizationUrl>http://www.servicenow.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Yujie Fang</name>
+      <email>yujie.fang@servicenow.com</email>
       <organization>ServiceNow, Inc.</organization>
       <organizationUrl>http://www.servicenow.com</organizationUrl>
     </developer>
