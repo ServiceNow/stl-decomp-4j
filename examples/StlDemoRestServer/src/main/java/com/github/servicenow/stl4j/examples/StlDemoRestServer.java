@@ -4,10 +4,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+
 import com.github.servicenow.ds.stats.stl.SeasonalTrendLoess;
 
 import static spark.Spark.*;
