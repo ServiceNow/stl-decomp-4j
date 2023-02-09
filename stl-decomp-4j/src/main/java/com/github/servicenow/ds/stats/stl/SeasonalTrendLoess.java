@@ -13,7 +13,9 @@ import static com.github.servicenow.ds.stats.TimeSeriesUtilities.simpleMovingAve
 public class SeasonalTrendLoess {
 
 	private final double[] fData;
-	private double[][] fExogenousData;
+
+	// exogenous independent variables that may have affected the input data and therefore can produce similar effects on the forecasts
+	private final double[][] fExogenousData;
 
 	private Decomposition fDecomposition;
 

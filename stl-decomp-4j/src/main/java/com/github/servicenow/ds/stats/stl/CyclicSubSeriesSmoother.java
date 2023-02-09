@@ -12,7 +12,14 @@ public class CyclicSubSeriesSmoother {
 
 	private final double[][] fRawCyclicSubSeries;
 	private final double[][] fSmoothedCyclicSubSeries;
+
+	// reshaped version of exogenous inputs with an extra dimension created to form subseries with respect to the periodicity,
+	// thereby leading to the dimensions [periodicity][numOfExogData][numOfDataInEachCycle]
 	private final double[][][] fExogenousCyclicSeries;
+
+	// controls the output of non-exogenous component from the fit
+	private final boolean fOutputNonExogenousPart;
+
 	private final double[][] fSubSeriesWeights;
 
 	private final int fPeriodLength;
@@ -23,7 +30,7 @@ public class CyclicSubSeriesSmoother {
 	private final int fNumPeriodsToExtrapolateForward;
 
 	private final int fWidth;
-	private final boolean fOutputNonExogenousPart;
+	private final int fDegree;
 	private final LoessSmoother.Builder fLoessSmootherFactory;
 
 	/**
@@ -222,6 +229,7 @@ public class CyclicSubSeriesSmoother {
 	                        int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward,
 	                        int numExogenousInputs, boolean outputNonExogenousPart) {
 		fWidth = width;
+		fDegree = degree;
 
 		fLoessSmootherFactory = new LoessSmoother.Builder().setWidth(width).setJump(jump).setDegree(degree);
 
@@ -359,16 +367,22 @@ public class CyclicSubSeriesSmoother {
 				.setOutputNonExogenousPart(fOutputNonExogenousPart)
 				.setExternalWeights(weights)
 				.build();
-
+				
 		// Copy, shifting by 1 to leave room for the extrapolated point at the beginning.
 
 		System.arraycopy(smoother.smooth(), 0, smoothedData, fNumPeriodsToExtrapolateBackward, cycleLength);
 
-		LoessInterpolator interpolator = smoother.getInterpolator();
+		LoessInterpolator interpolator;
 		if (fNumPeriodsToExtrapolateForward > 0 && fOutputNonExogenousPart) {
-			interpolator.setExogenousInputs(null); // if with exogs, remove them and forecast only non-exog part.
-			interpolator.setData(Arrays.copyOf(smoothedData, rawData.length)); // extrapolate wrt. trend data
+			interpolator = new LoessInterpolator.Builder()
+					.setWidth(fWidth)
+					.setDegree(fDegree)
+					.setOutputNonExogenousPart(fOutputNonExogenousPart)
+					.setExternalWeights(weights)
+					.interpolate(Arrays.copyOf(smoothedData, rawData.length), null); // if with exogs, remove them and forecast only non-exog part.
 		}
+		else
+			interpolator = smoother.getInterpolator();
 
 		// Extrapolate from the leftmost "width" points to the "-1" position
 		int left = 0;

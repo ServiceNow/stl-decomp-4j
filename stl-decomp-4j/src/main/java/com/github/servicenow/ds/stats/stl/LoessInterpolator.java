@@ -22,10 +22,13 @@ abstract class LoessInterpolator {
 
 	private final int fWidth;
 	private final double[] fExternalWeights;
-
-	double[] fData;
-	double[][] fExogenousData;
+	final double[] fData;
 	final double[] fWeights;
+
+	// exogenous independent variables that may have affected the input data and therefore can produce similar effects on the forecasts
+	final double[][] fExogenousData;
+
+	// controls the output of non-exogenous component from the fit
 	final boolean fOutputNonExogenousPart;
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -284,14 +287,6 @@ abstract class LoessInterpolator {
 		this.fExternalWeights = externalWeights;
 		this.fOutputNonExogenousPart = outputNonExogenousPart;
 		this.fWeights = new double[data.length];
-	}
-
-	public void setExogenousInputs(double[][] exogenousData) {
-		fExogenousData = exogenousData;
-	}
-
-	public void setData(double[] data) {
-		fData = data;
 	}
 
 	protected final double smoothOnePointExogModel(double x, int left, int right, int degree, boolean bOutputNonExogenousPart) {

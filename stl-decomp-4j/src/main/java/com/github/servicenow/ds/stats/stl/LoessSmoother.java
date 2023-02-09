@@ -12,10 +12,14 @@ public class LoessSmoother {
 
 	private final LoessInterpolator fInterpolator;
 	private final double[] fData;
-	private double[][] fExogenousData;
 	private final int fWidth;
 	private final int fJump;
 	private final double[] fSmoothed;
+
+	// exogenous independent variables that may have affected the input data and therefore can produce similar effects on the forecasts
+	private final double[][] fExogenousData;
+
+	// controls the output of non-exogenous component from the fit
 	private final boolean fOutputNonExogenousPart;
 
 	public static class Builder {
@@ -168,11 +172,6 @@ public class LoessSmoother {
 	public LoessInterpolator getInterpolator() {
 		return fInterpolator;
 	}
-
-	public void setExogenousInputs(double[][] exogenousinputs) {
-		fExogenousData = exogenousinputs;
-	}
-
 	// TODO: Refactor to use a strategy pattern - dependencies on final params are determined at construction time.
 
 	/**
