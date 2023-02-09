@@ -1,4 +1,4 @@
-package com.snc.ds.stats.stl;
+package com.github.servicenow.ds.stats.stl;
 
 import java.util.Arrays;
 
@@ -198,6 +198,4 @@ public class StlMultivariateTest {
 		assertArrayEquals(fTrendExog2, trendexog, epsilon);
 		assertArrayEquals(fResidual2, residual, epsilon);
 	}
-
-
 }

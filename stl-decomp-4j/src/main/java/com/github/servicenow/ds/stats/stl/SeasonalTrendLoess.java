@@ -300,7 +300,7 @@ public class SeasonalTrendLoess {
 		 * @param exogenousData the exogenous data inputs to use, each row is an individual input
 		 * @return a new SeasonalTrendLoess object
 		 */
-		private SeasonalTrendLoess buildSmoother(double[] data, double[][] exogenousData) {
+		public SeasonalTrendLoess buildSmoother(double[] data, double[][] exogenousData) {
 			sanityCheck(data);
 
 			if (fPeriodic) {
