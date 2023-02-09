@@ -37,8 +37,8 @@ public class CyclicSubSeriesSmoother {
 		private Integer fNumPeriodsForward = null;
 		private int fDegree = 1;
 		private int fJump = 1;
-		private int fNumExogenousInputs = 0;
-		private boolean fOutputNonExogenousPart = false;
+		private int fNumExogenousInputs;
+		private boolean fOutputNonExogenousPart;
 
 		/**
 		 * Set the width of the LOESS smoother used to smooth each seasonal sub-series.

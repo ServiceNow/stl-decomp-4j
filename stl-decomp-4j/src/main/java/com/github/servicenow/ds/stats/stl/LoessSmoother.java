@@ -25,7 +25,7 @@ public class LoessSmoother {
 		private double[] fExternalWeights = null;
 		private double[] fData = null;
 		private double[][] fExogenousData = null;
-		private boolean fOutputNonExogenousPart = false;
+		private boolean fOutputNonExogenousPart;
 
 		/**
 		 * Set the width of the LOESS smoother.

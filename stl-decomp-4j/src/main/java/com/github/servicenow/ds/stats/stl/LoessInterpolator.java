@@ -42,7 +42,7 @@ abstract class LoessInterpolator {
 		private Integer fWidth = null;
 		private int fDegree = 1;
 		private double[] fExternalWeights = null;
-		private boolean fOutputNonExogenousPart = false;
+		private boolean fOutputNonExogenousPart;
 
 		/**
 		 * Set the width of the LOESS smoother.
@@ -271,13 +271,13 @@ abstract class LoessInterpolator {
 	 * @param data
 	 *            - underlying data set that is being smoothed
 	 * @param exogenousData
-	 *            -
+	 *            - the exogenous inputs by the user, where each row of this double[][] is an individual input
 	 * @param externalWeights
 	 *            - additional weights to apply in the smoothing. Ignored if null.
 	 * @param outputNonExogenousPart
-	 *            -
+	 *            - boolean to output only the non-exogenous (the constant+trend) component from the smoother
 	 */
-	LoessInterpolator(int width, double[] data,double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
+	LoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
 		this.fWidth = width;
 		this.fData = data;
 		this.fExogenousData = exogenousData;
@@ -337,13 +337,13 @@ abstract class LoessInterpolator {
 
 	}
 
+	/**
+	 * Ordinary least-squares (first tries normal inverse, if errors appear, then switches to the pseudoinverse via SVD
+	 * @param regressorMatrix the regressor matrix
+	 * @param datavector the datavector that is fit
+	 * @return vector of estimated parameters
+	 */
 	protected final double[] leastSquaresEstimation(double[][] regressorMatrix, double[] datavector) {
-		/**
-		 * Ordinary least-squares (first tries normal inverse, if errors appear, then switches to the pseudoinverse via SVD
-		 * @param regressorMatrix the regressor matrix
-		 * @param datavector the datavector that is fit
-		 * @return vector of estimated parameters
-		 */
 		try {
 			OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
 			regression.setNoIntercept(true);
@@ -367,6 +367,7 @@ class FlatLoessInterpolator extends LoessInterpolator {
 	 * @param width           - the width of the neighborhood weighting function
 	 * @param data            - underlying data set that is being smoothed
 	 * @param externalWeights
+	 * @param outputNonExogenousPart - boolean to output only the non-exogenous (the constant+trend) component from the smoother
 	 */
 	FlatLoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
 		super(width, data, exogenousData, externalWeights, outputNonExogenousPart);
@@ -388,6 +389,8 @@ class LinearLoessInterpolator extends LoessInterpolator {
 	 * @param width           - the width of the neighborhood weighting function
 	 * @param data            - underlying data set that is being smoothed
 	 * @param externalWeights
+	 * @param exogenousData   - the exogenous inputs by the user, where each row of this double[][] is an individual input
+	 * @param outputNonExogenousPart - boolean to output only the non-exogenous (the constant+trend) component from the smoother
 	 */
 	LinearLoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
 		super(width, data,exogenousData, externalWeights, outputNonExogenousPart);
@@ -438,6 +441,8 @@ class QuadraticLoessInterpolator extends LoessInterpolator {
 	 * @param width           - the width of the neighborhood weighting function
 	 * @param data            - underlying data set that is being smoothed
 	 * @param externalWeights
+	 * @param exogenousData   - the exogenous inputs by the user, where each row of this double[][] is an individual input
+	 * @param outputNonExogenousPart - boolean to output only the non-exogenous (the constant+trend) component from the smoother
 	 */
 	QuadraticLoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
 		super(width, data, exogenousData, externalWeights, outputNonExogenousPart);
