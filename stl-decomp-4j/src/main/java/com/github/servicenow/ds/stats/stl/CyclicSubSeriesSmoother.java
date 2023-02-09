@@ -373,14 +373,13 @@ public class CyclicSubSeriesSmoother {
 		System.arraycopy(smoother.smooth(), 0, smoothedData, fNumPeriodsToExtrapolateBackward, cycleLength);
 
 		LoessInterpolator interpolator;
-		if (fNumPeriodsToExtrapolateForward > 0 && fOutputNonExogenousPart) {
+		if (fNumPeriodsToExtrapolateForward > 0 && fOutputNonExogenousPart)
 			interpolator = new LoessInterpolator.Builder()
 					.setWidth(fWidth)
 					.setDegree(fDegree)
 					.setOutputNonExogenousPart(fOutputNonExogenousPart)
 					.setExternalWeights(weights)
 					.interpolate(Arrays.copyOf(smoothedData, rawData.length), null); // if with exogs, remove them and forecast only non-exog part.
-		}
 		else
 			interpolator = smoother.getInterpolator();
 
