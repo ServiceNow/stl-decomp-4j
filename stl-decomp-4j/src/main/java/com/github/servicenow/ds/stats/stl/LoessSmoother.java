@@ -12,9 +12,11 @@ public class LoessSmoother {
 
 	private final LoessInterpolator fInterpolator;
 	private final double[] fData;
+	private double[][] fExogenousData;
 	private final int fWidth;
 	private final int fJump;
 	private final double[] fSmoothed;
+	private final boolean fOutputNonExogenousPart;
 
 	public static class Builder {
 		private Integer fWidth = null;
@@ -22,6 +24,8 @@ public class LoessSmoother {
 		private int fJump = 1;
 		private double[] fExternalWeights = null;
 		private double[] fData = null;
+		private double[][] fExogenousData = null;
+		private boolean fOutputNonExogenousPart = false;
 
 		/**
 		 * Set the width of the LOESS smoother.
@@ -90,6 +94,28 @@ public class LoessSmoother {
 		}
 
 		/**
+		 * Set the exogenous data inputs
+		 *
+		 * @param exogenousData the exogenous data inputs to be used where each row is an input.
+		 * @return this
+		 */
+		public Builder setExogenousInputs(double[][] exogenousData) {
+			fExogenousData = exogenousData;
+			return this;
+		}
+
+		/**
+		 * Set the boolean for outputting only the nonexogenous part from the smoother.
+		 *
+		 * @param outputNonExogenousPart boolean if True then only outputs the const+trend from the smoother.
+		 * @return this
+		 */
+		public Builder setOutputNonExogenousPart(boolean outputNonExogenousPart) {
+			fOutputNonExogenousPart = outputNonExogenousPart;
+			return this;
+		}
+
+		/**
 		 * Build the LoessSmoother.
 		 *
 		 * @return new LoessSmoother
@@ -101,7 +127,7 @@ public class LoessSmoother {
 			if (fData == null)
 				throw new IllegalStateException("LoessSmoother.Builder: Data must be set before calling build");
 
-			return new LoessSmoother(fWidth, fJump, fDegree, fData, fExternalWeights);
+			return new LoessSmoother(fWidth, fJump, fDegree, fData, fExogenousData, fExternalWeights, fOutputNonExogenousPart);
 		}
 	}
 
@@ -119,10 +145,16 @@ public class LoessSmoother {
 	 * @param data            underlying data set that is being smoothed
 	 * @param externalWeights additional weights to apply in the smoothing. Ignored if null.
 	 */
-	private LoessSmoother(int width, int jump, int degree, double[] data, double[] externalWeights) {
+	private LoessSmoother(int width, int jump, int degree, double[] data, double[][] exogenousinputs, double[] externalWeights, boolean outputNonExogenousPart) {
 		final LoessInterpolator.Builder b = new LoessInterpolator.Builder();
-		this.fInterpolator = b.setWidth(width).setDegree(degree).setExternalWeights(externalWeights).interpolate(data);
+		this.fInterpolator = b.setWidth(width)
+				.setDegree(degree)
+				.setOutputNonExogenousPart(outputNonExogenousPart)
+				.setExternalWeights(externalWeights)
+				.interpolate(data, exogenousinputs);
 		this.fData = data;
+		this.fExogenousData = exogenousinputs;
+		this.fOutputNonExogenousPart = outputNonExogenousPart;
 		this.fJump = Math.min(jump, data.length - 1);
 		this.fWidth = width;
 		this.fSmoothed = new double[data.length];
@@ -135,6 +167,10 @@ public class LoessSmoother {
 	 */
 	public LoessInterpolator getInterpolator() {
 		return fInterpolator;
+	}
+
+	public void setExogenousInputs(double[][] exogenousinputs) {
+		fExogenousData = exogenousinputs;
 	}
 
 	// TODO: Refactor to use a strategy pattern - dependencies on final params are determined at construction time.

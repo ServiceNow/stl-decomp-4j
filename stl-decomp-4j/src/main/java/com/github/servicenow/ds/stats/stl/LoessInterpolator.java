@@ -1,5 +1,14 @@
 package com.github.servicenow.ds.stats.stl;
 
+import java.util.Arrays;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+
+import org.apache.commons.math3.linear.DecompositionSolver;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.SingularValueDecomposition;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
+
 /**
  * LoessInterpolator implements Cleveland et al's LOESS smoothing from their STL functionality.
  * <p>
@@ -14,8 +23,10 @@ abstract class LoessInterpolator {
 	private final int fWidth;
 	private final double[] fExternalWeights;
 
-	final double[] fData;
+	double[] fData;
+	double[][] fExogenousData;
 	final double[] fWeights;
+	final boolean fOutputNonExogenousPart;
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// Construction
@@ -31,6 +42,7 @@ abstract class LoessInterpolator {
 		private Integer fWidth = null;
 		private int fDegree = 1;
 		private double[] fExternalWeights = null;
+		private boolean fOutputNonExogenousPart = false;
 
 		/**
 		 * Set the width of the LOESS smoother.
@@ -71,12 +83,24 @@ abstract class LoessInterpolator {
 		}
 
 		/**
+		 * Set the boolean for outputting only the nonexogenous part from the smoother.
+		 *
+		 * @param outputNonExogenousPart boolean if True then only outputs the const+trend from the smoother.
+		 * @return this
+		 */
+		public Builder setOutputNonExogenousPart(boolean outputNonExogenousPart) {
+			fOutputNonExogenousPart = outputNonExogenousPart;
+			return this;
+		}
+
+		/**
 		 * Create a LoessInterpolator for interpolating the given data array.
 		 *
 		 * @param data
+		 * @param exogenousData
 		 * @return new LoessInterpolator
 		 */
-		LoessInterpolator interpolate(double[] data) {
+		public LoessInterpolator interpolate(double[] data, double[][] exogenousData) {
 			if (fWidth == null)
 				throw new IllegalStateException("LoessInterpolator.Builder: Width must be set");
 
@@ -85,15 +109,20 @@ abstract class LoessInterpolator {
 
 			switch (fDegree) {
 				case 0:
-					return new FlatLoessInterpolator(fWidth, data, fExternalWeights);
+					return new FlatLoessInterpolator(fWidth, data, exogenousData, fExternalWeights, fOutputNonExogenousPart);
 				case 1:
-					return new LinearLoessInterpolator(fWidth, data, fExternalWeights);
+					return new LinearLoessInterpolator(fWidth, data, exogenousData, fExternalWeights, fOutputNonExogenousPart);
 				case 2:
-					return new QuadraticLoessInterpolator(fWidth, data, fExternalWeights);
+					return new QuadraticLoessInterpolator(fWidth, data, exogenousData, fExternalWeights, fOutputNonExogenousPart);
 				default:
 					return null; // Can't actually get here but compiler didn't figure that out.
 			}
 		}
+
+		LoessInterpolator interpolate(double[] data) {
+			return interpolate(data, null);
+		}
+
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -122,6 +151,10 @@ abstract class LoessInterpolator {
 
 		if (state == State.WEIGHTS_FAILED)
 			return null;
+
+		if (fExogenousData != null && state == State.LINEAR_OK) {
+			return smoothOnePointExogModel(x, left, right, 1, fOutputNonExogenousPart);
+		}
 
 		if (state == State.LINEAR_OK)
 			updateWeights(x, left, right);
@@ -237,14 +270,92 @@ abstract class LoessInterpolator {
 	 *            - the width of the neighborhood weighting function
 	 * @param data
 	 *            - underlying data set that is being smoothed
+	 * @param exogenousData
+	 *            -
 	 * @param externalWeights
 	 *            - additional weights to apply in the smoothing. Ignored if null.
+	 * @param outputNonExogenousPart
+	 *            -
 	 */
-	LoessInterpolator(int width, double[] data, double[] externalWeights) {
+	LoessInterpolator(int width, double[] data,double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
 		this.fWidth = width;
 		this.fData = data;
+		this.fExogenousData = exogenousData;
 		this.fExternalWeights = externalWeights;
+		this.fOutputNonExogenousPart = outputNonExogenousPart;
 		this.fWeights = new double[data.length];
+	}
+
+	public void setExogenousInputs(double[][] exogenousData) {
+		fExogenousData = exogenousData;
+	}
+
+	public void setData(double[] data) {
+		fData = data;
+	}
+
+	protected final double smoothOnePointExogModel(double x, int left, int right, int degree, boolean bOutputNonExogenousPart) {
+		// Update weights routine when there are exogenous inputs (solved via weighed least-squares)
+
+		// First form the regressor matrix and the data vector
+		int datalength = fData.length;
+		int windowlength = right - left + 1;
+		int numExogInputs = fExogenousData.length;
+		int numRegressorColumns = degree + 1 + numExogInputs;
+		double[] xpoints = IntStream.rangeClosed(left, right).mapToDouble(el->el/(double) datalength).toArray();
+
+		double[][] regressorMatrixTranspose = new double[numRegressorColumns][windowlength];
+		regressorMatrixTranspose[0] = DoubleStream.generate(()->1.0).limit(windowlength).toArray();
+		for (int i = 1; i <=degree; ++i) {
+			int intpower = i;
+			regressorMatrixTranspose[i] = DoubleStream.of(xpoints).map(el->Math.pow(el, intpower)).toArray();
+		}
+		for (int i = degree+1; i <numRegressorColumns; ++i) {
+			regressorMatrixTranspose[i] = Arrays.copyOfRange(fExogenousData[i-degree-1], left, right+1);
+		}
+		double[][] regressorMatrix = MatrixUtils.createRealMatrix(regressorMatrixTranspose).transpose().getData();
+		double[] datavector = Arrays.copyOfRange(fData, left, right+1);
+		double[] weightsvector = Arrays.copyOfRange(fWeights, left, right+1);
+
+		// Then solve the weighted least-squares problem
+		double[] datavectorweighted = new double[windowlength];
+		double[][] regressorMatrixWeighted = new double[windowlength][numRegressorColumns];
+
+		for (int i = 0; i < windowlength; ++i) {
+			double weight = Math.sqrt( Math.max(Math.abs(weightsvector[i]), 1e-20) );
+			datavectorweighted[i] = weight * datavector[i];
+			for (int j = 0; j < numRegressorColumns; ++j)
+				regressorMatrixWeighted[i][j] = weight * regressorMatrix[i][j];
+		}
+		double[] parameters = leastSquaresEstimation(regressorMatrixWeighted, datavectorweighted);
+
+		int indexRegressors = bOutputNonExogenousPart ? degree + 1 : numRegressorColumns;
+		double ys = 0.0;
+		for (int i = 0; i < indexRegressors; ++i)
+			ys += regressorMatrix[(int) (x-left)][i] * parameters[i];
+		return ys;
+
+	}
+
+	protected final double[] leastSquaresEstimation(double[][] regressorMatrix, double[] datavector) {
+		/**
+		 * Ordinary least-squares (first tries normal inverse, if errors appear, then switches to the pseudoinverse via SVD
+		 * @param regressorMatrix the regressor matrix
+		 * @param datavector the datavector that is fit
+		 * @return vector of estimated parameters
+		 */
+		try {
+			OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+			regression.setNoIntercept(true);
+			regression.newSampleData(datavector, regressorMatrix);
+			return regression.estimateRegressionParameters();
+		}
+		// use the pseudoinverse in case of errors
+		catch (Exception e) {
+			SingularValueDecomposition svd = new SingularValueDecomposition(MatrixUtils.createRealMatrix(regressorMatrix));
+			DecompositionSolver solver = svd.getSolver();
+			return solver.solve(MatrixUtils.createRealVector(datavector)).toArray();
+		}
 	}
 }
 
@@ -257,8 +368,8 @@ class FlatLoessInterpolator extends LoessInterpolator {
 	 * @param data            - underlying data set that is being smoothed
 	 * @param externalWeights
 	 */
-	FlatLoessInterpolator(int width, double[] data, double[] externalWeights) {
-		super(width, data, externalWeights);
+	FlatLoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
+		super(width, data, exogenousData, externalWeights, outputNonExogenousPart);
 	}
 
 	/**
@@ -278,8 +389,8 @@ class LinearLoessInterpolator extends LoessInterpolator {
 	 * @param data            - underlying data set that is being smoothed
 	 * @param externalWeights
 	 */
-	LinearLoessInterpolator(int width, double[] data, double[] externalWeights) {
-		super(width, data, externalWeights);
+	LinearLoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
+		super(width, data,exogenousData, externalWeights, outputNonExogenousPart);
 	}
 
 	/**
@@ -328,8 +439,8 @@ class QuadraticLoessInterpolator extends LoessInterpolator {
 	 * @param data            - underlying data set that is being smoothed
 	 * @param externalWeights
 	 */
-	QuadraticLoessInterpolator(int width, double[] data, double[] externalWeights) {
-		super(width, data, externalWeights);
+	QuadraticLoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
+		super(width, data, exogenousData, externalWeights, outputNonExogenousPart);
 	}
 
 	/**
