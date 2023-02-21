@@ -585,6 +585,7 @@ public class SeasonalTrendLoess {
 		public double[] getData() {
 			return fData;
 		}
+
 		/**
 		 * Get the exogenous data inputs that was decomposed
 		 *
@@ -748,18 +749,18 @@ public class SeasonalTrendLoess {
 
 			boolean useResidualWeights = outerIteration > 0;
 
-			if (fExogenousData == null) {
+			if (fExogenousData != null && fExogenousData.length > 0) {
 				for (int iteration = 0; iteration < fInnerIterations; ++iteration) {
-					smoothSeasonalSubCycles(useResidualWeights);
 					removeSeasonality();
 					updateSeasonalAndTrend(useResidualWeights);
+					smoothSeasonalSubCycles(useResidualWeights);
 				}
 			}
 			else {
 				for (int iteration = 0; iteration < fInnerIterations; ++iteration) {
+					smoothSeasonalSubCycles(useResidualWeights);
 					removeSeasonality();
 					updateSeasonalAndTrend(useResidualWeights);
-					smoothSeasonalSubCycles(useResidualWeights);
 				}
 			}
 
@@ -795,7 +796,7 @@ public class SeasonalTrendLoess {
 
 		double[] residualWeights = useResidualWeights ? weights : null;
 
-		fCyclicSubSeriesSmoother.smoothSeasonal(fDetrend, fExtendedSeasonal, null, residualWeights);
+		fCyclicSubSeriesSmoother.smoothSeasonal(fDetrend, fExtendedSeasonal, residualWeights);
 	}
 
 	/**

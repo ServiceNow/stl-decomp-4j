@@ -20,6 +20,9 @@ public class CyclicSubSeriesSmoother {
 	// controls the output of non-exogenous component from the fit
 	private final boolean fOutputNonExogenousPart;
 
+	// exogenous independent variables that may have affected the input data and therefore can produce similar effects on the forecasts
+	private final double[][] fExogenousData;
+
 	private final double[][] fSubSeriesWeights;
 
 	private final int fPeriodLength;
@@ -44,8 +47,7 @@ public class CyclicSubSeriesSmoother {
 		private Integer fNumPeriodsForward = null;
 		private int fDegree = 1;
 		private int fJump = 1;
-		private int fNumExogenousInputs;
-		private boolean fOutputNonExogenousPart;
+		private double[][] fExogenousData;
 
 		/**
 		 * Set the width of the LOESS smoother used to smooth each seasonal sub-series.
@@ -108,24 +110,12 @@ public class CyclicSubSeriesSmoother {
 		}
 
 		/**
-		 * Set the number of exogenous inputs
+		 * Get the exogenous data inputs that was decomposed
 		 *
-		 * @param numExogenousInputs number of exogenous inputs
-		 * @return this
+		 * @return double[][] the exogenous data inputs
 		 */
-		public Builder setNumExogenousInputs(int numExogenousInputs) {
-			fNumExogenousInputs = numExogenousInputs;
-			return this;
-		}
-
-		/**
-		 * Set the boolean for outputting only the nonexogenous part from the smoother.
-		 *
-		 * @param outputNonExogenousPart boolean if True then only outputs the const+trend from the smoother.
-		 * @return this
-		 */
-		public Builder setOutputNonExogenousPart(boolean outputNonExogenousPart) {
-			fOutputNonExogenousPart = outputNonExogenousPart;
+		public Builder setExogenousData(double[][] exogenousData) {
+			fExogenousData = exogenousData;
 			return this;
 		}
 
@@ -188,7 +178,7 @@ public class CyclicSubSeriesSmoother {
 			checkSanity();
 
 			return new CyclicSubSeriesSmoother(fWidth, fDegree, fJump, fDataLength, fPeriodicity,
-					fNumPeriodsBackward, fNumPeriodsForward, fNumExogenousInputs, fOutputNonExogenousPart);
+					fNumPeriodsBackward, fNumPeriodsForward, fExogenousData);
 		}
 
 		private void checkSanity() {
@@ -220,29 +210,30 @@ public class CyclicSubSeriesSmoother {
 	 * @param periodicity                     length of the cyclic period
 	 * @param numPeriodsToExtrapolateBackward number of periods to extrapolate backward
 	 * @param numPeriodsToExtrapolateForward  numbers of periods to extrapolate forward
-	 * @param numExogenousInputs              number of exogenous inputs
-	 * @param outputNonExogenousPart               if true it separates trend from exogenous inputs and outputs the former
-	 *                                        if false it outputs the whole (smoothed) fit to the trend and exogenous inputs
+	 * @param exogenousData                   exogenous independent variables that may have affected the input data
 	 */
 	CyclicSubSeriesSmoother(int width, int degree, int jump,
 	                        int dataLength, int periodicity,
 	                        int numPeriodsToExtrapolateBackward, int numPeriodsToExtrapolateForward,
-	                        int numExogenousInputs, boolean outputNonExogenousPart) {
+							double[][] exogenousData) {
 		fWidth = width;
 		fDegree = degree;
 
 		fLoessSmootherFactory = new LoessSmoother.Builder().setWidth(width).setJump(jump).setDegree(degree);
+		fOutputNonExogenousPart = exogenousData != null && exogenousData.length > 0;
 
+		int numExogenousInputs = fOutputNonExogenousPart ?  exogenousData.length : 0;
 		// For overdetermined system in the smoothing one should have (dataLength/periodicity) >= (numExogenousInputs + degree + 1)
 		// This can be made more strict via multiplying the rhs. by 2-5 or adding some integer where the latter is done below.
-		if (outputNonExogenousPart && ((dataLength/periodicity) < (numExogenousInputs + degree + 4)) )
+		if (fOutputNonExogenousPart && ((dataLength/periodicity) < (numExogenousInputs + degree + 4)) )
 			periodicity = 1; // if periodicity > 1 does not allow for subseries fit then fit the whole series at once.
 
 		fPeriodLength = periodicity;
 		fNumPeriods = dataLength / periodicity;
 		fRemainder = dataLength % periodicity;
 
-		fOutputNonExogenousPart = outputNonExogenousPart;
+		fExogenousData = exogenousData;
+
 		fNumPeriodsToExtrapolateBackward = numPeriodsToExtrapolateBackward;
 		fNumPeriodsToExtrapolateForward = numPeriodsToExtrapolateForward;
 
@@ -270,6 +261,12 @@ public class CyclicSubSeriesSmoother {
 					+ fNumPeriodsToExtrapolateForward];
 			fSubSeriesWeights[period] = new double[seriesLength];
 		}
+
+		if (fOutputNonExogenousPart) {
+			for (int period = 0; period < periodicity; ++period)
+				fExogenousCyclicSeries[period] = new double[fExogenousData.length][fRawCyclicSubSeries[period].length];
+
+		}
 	}
 
 	/**
@@ -281,18 +278,11 @@ public class CyclicSubSeriesSmoother {
 	 * @param exogenousinputs exogenous inputs data where each row is an input
 	 * @param weights      weights to use in the underlying interpolator; ignored if null.
 	 */
-	public void smoothSeasonal(double[] rawData, double[] smoothedData, double[][] exogenousinputs, double[] weights) {
-		if (exogenousinputs == null)
-			extractRawSubSeriesAndWeights(rawData, weights);
-		else
-			extractRawSubSeriesAndWeights(rawData, exogenousinputs, weights);
+	public void smoothSeasonal(double[] rawData, double[] smoothedData, double[] weights) {
+		extractRawSubSeriesAndWeights(rawData, weights);
 		computeSmoothedSubSeries(weights != null);
 		reconstructExtendedDataFromSubSeries(smoothedData);
 		// SeasonalTrendLoess.dumpDebugData("extended seasonal", smoothedData);
-	}
-
-	public void smoothSeasonal(double[] rawData, double[] smoothedData, double[] weights) {
-		smoothSeasonal(rawData, smoothedData, null, weights);
 	}
 
 	private void computeSmoothedSubSeries(boolean useResidualWeights) {
@@ -313,25 +303,13 @@ public class CyclicSubSeriesSmoother {
 			final int cycleLength = (period < fRemainder) ? (fNumPeriods + 1) : fNumPeriods;
 			for (int i = 0; i < cycleLength; ++i) {
 				fRawCyclicSubSeries[period][i] = data[i * fPeriodLength + period];
+				if (fOutputNonExogenousPart) {
+					for (int j = 0; j < fExogenousData.length; ++j)
+						fExogenousCyclicSeries[period][j][i] = fExogenousData[j][i * fPeriodLength + period];
+
+				}
 				if (weights != null) {
 					fSubSeriesWeights[period][i] = weights[i * fPeriodLength + period];
-				}
-			}
-		}
-	}
-
-	private void extractRawSubSeriesAndWeights(double[] data, double[][] exogenousinputs, double[] weights) {
-		for (int period = 0; period < fPeriodLength; ++period) {
-			fExogenousCyclicSeries[period] = new double[exogenousinputs.length][fRawCyclicSubSeries[period].length];
-			final int cycleLength = (period < fRemainder) ? (fNumPeriods + 1) : fNumPeriods;
-			for (int i = 0; i < cycleLength; ++i) {
-				int index = i * fPeriodLength + period;
-				fRawCyclicSubSeries[period][i] = data[index];
-				for (int j = 0; j < exogenousinputs.length; ++j) {
-					fExogenousCyclicSeries[period][j][i] = exogenousinputs[j][index];
-				}
-				if (weights != null) {
-					fSubSeriesWeights[period][i] = weights[index];
 				}
 			}
 		}
