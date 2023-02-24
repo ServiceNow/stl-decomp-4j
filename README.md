@@ -42,7 +42,7 @@ Limited testing show the Java to be about half the speed of the Fortran. A compa
 ## Extension to include exogenous inputs 
 
 The STL method is extended to incorporate exogenous inputs where details can be found in the [StlExogenous example](https://github.com/ServiceNow/stl-decomp-4j/tree/master/examples/StlExogenous). 
-To apply these inputs, simply build the smoother with them (double[][] exogenousinputs with each row being an input) as illustrated below. Afterwards, the .decompose() method is again applied and the .getTrend() now extracts the combined effect of the trend and exogenous inputs. 
+To apply these inputs, simply build the smoother with them (`double[][] exogenousinputs` with each row being an input) as illustrated below. Afterwards, the `.decompose()` method is again applied and the `.getTrend()` now extracts the combined effect of the trend and exogenous inputs. 
 
 ```java 
 SeasonalTrendLoess smoother = builder.buildSmoother(values, exogenousinputs) 
