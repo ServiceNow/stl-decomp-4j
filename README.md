@@ -39,6 +39,15 @@ The [StlPerfTest example](examples/StlPerfTest) times the STL running on the CO<
 
 Limited testing show the Java to be about half the speed of the Fortran. A comparison of the resulting decompositions is shown in the [StlJavaFortranComparison notebook](examples/StlPerfTest/StlJavaFortranComparison.ipynb).
 
+## Extension to include exogenous inputs 
+
+The STL method is extended to incorporate exogenous inputs where details can be found in the [StlExogenous example](https://github.com/ServiceNow/stl-decomp-4j/tree/master/examples/StlExogenous). 
+To apply exogenous inputs, build the smoother with them (`double[][] exogenousinputs` with each row being one exogenous input) as shown in the example below. After calling the `.decompose()` method, you can get the STL components. Note that the `.getTrend()` method now extracts the combined effect of the trend and exogenous inputs. 
+
+```java 
+SeasonalTrendLoess smoother = builder.buildSmoother(values, exogenousinputs);
+```
+
 ## Documentation
 
 The implementation of the quadratic extension of `LoessInterpolator` is described, mathematically, in [ImplementationNotes](stl-decomp-4j/docs/ImplementationNotes.pdf).

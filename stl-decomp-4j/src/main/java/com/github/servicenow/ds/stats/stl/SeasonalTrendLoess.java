@@ -14,6 +14,9 @@ public class SeasonalTrendLoess {
 
 	private final double[] fData;
 
+	// exogenous independent variables that may have affected the input data and therefore can produce similar effects on the forecasts
+	private final double[][] fExogenousData;
+
 	private Decomposition fDecomposition;
 
 	private final int fPeriodLength;
@@ -296,9 +299,10 @@ public class SeasonalTrendLoess {
 		 * Construct the smoother.
 		 *
 		 * @param data the data to be smoothed
+		 * @param exogenousData the exogenous data inputs to use, each row is an individual input
 		 * @return a new SeasonalTrendLoess object
 		 */
-		public SeasonalTrendLoess buildSmoother(double[] data) {
+		public SeasonalTrendLoess buildSmoother(double[] data, double[][] exogenousData) {
 			sanityCheck(data);
 
 			if (fPeriodic) {
@@ -330,8 +334,18 @@ public class SeasonalTrendLoess {
 
 			LoessSettings lowpassSettings = buildSettings(fLowpassWidth, fLowpassDegree, fLowpassJump);
 
-			return new SeasonalTrendLoess(data, fPeriodLength, fInnerIterations, fRobustIterations,
+			return new SeasonalTrendLoess(data, exogenousData, fPeriodLength, fInnerIterations, fRobustIterations,
 					seasonalSettings, trendSettings, lowpassSettings);
+		}
+
+		/**
+		 * Construct the smoother.
+		 *
+		 * @param data the data to be smoothed
+		 * @return a new SeasonalTrendLoess object
+		 */
+		public SeasonalTrendLoess buildSmoother(double[] data) {
+			return buildSmoother(data, null);
 		}
 
 		private static int calcDefaultTrendWidth(int periodicity, int seasonalWidth) {
@@ -431,10 +445,11 @@ public class SeasonalTrendLoess {
 	 */
 	// Could be private but causes a hidden class to be generated in order for the Builder to have access.
 	@SuppressWarnings("WeakerAccess")
-	SeasonalTrendLoess(double[] data, int periodicity, int ni, int no, LoessSettings seasonalSettings,
+	SeasonalTrendLoess(double[] data, double[][] exogenousData, int periodicity, int ni, int no, LoessSettings seasonalSettings,
 	                   LoessSettings trendSettings, LoessSettings lowpassSettings) {
 
 		fData = data;
+		fExogenousData = exogenousData;
 
 		final int size = data.length;
 
@@ -446,7 +461,7 @@ public class SeasonalTrendLoess {
 		fRobustIterations = no;
 
 		fLoessSmootherFactory = new LoessSmoother.Builder() //
-				.setWidth(fTrendSettings.getWidth()) //
+				.setWidth(fTrendSettings.getWidth() + (fExogenousData == null ? 0 : fExogenousData.length)) //
 				.setDegree(fTrendSettings.getDegree()) //
 				.setJump(fTrendSettings.getJump());
 
@@ -535,6 +550,7 @@ public class SeasonalTrendLoess {
 	public static class Decomposition {
 
 		private final double[] fData;
+		private final double[][] fExogenousData;
 		private final double[] fTrend;
 		private final double[] fSeasonal;
 		private final double[] fResiduals;
@@ -546,9 +562,11 @@ public class SeasonalTrendLoess {
 		 * Allocates space for the decomposition and initializes the weights to 1.
 		 *
 		 * @param data input data
+		 * @param exogenousData exogenous input data
 		 */
-		Decomposition(double[] data) {
+		Decomposition(double[] data, double[][] exogenousData) {
 			fData = data;
+			fExogenousData = exogenousData;
 
 			int size = fData.length;
 			fTrend = new double[size];
@@ -566,6 +584,15 @@ public class SeasonalTrendLoess {
 		 */
 		public double[] getData() {
 			return fData;
+		}
+
+		/**
+		 * Get the exogenous data inputs that was decomposed
+		 *
+		 * @return double[][] the exogenous data inputs
+		 */
+		public double[][] getExogenousData() {
+			return fExogenousData;
 		}
 
 		/**
@@ -715,18 +742,26 @@ public class SeasonalTrendLoess {
 	 */
 	public Decomposition decompose() {
 		// TODO: Pass input data to decompose and reallocate buffers based on that size.
-
-		fDecomposition = new Decomposition(fData);
+		fDecomposition = new Decomposition(fData, fExogenousData);
 
 		int outerIteration = 0;
 		while (true) {
 
 			boolean useResidualWeights = outerIteration > 0;
 
-			for (int iteration = 0; iteration < fInnerIterations; ++iteration) {
-				smoothSeasonalSubCycles(useResidualWeights);
-				removeSeasonality();
-				updateSeasonalAndTrend(useResidualWeights);
+			if (fExogenousData != null && fExogenousData.length > 0) {
+				for (int iteration = 0; iteration < fInnerIterations; ++iteration) {
+					removeSeasonality();
+					updateSeasonalAndTrend(useResidualWeights);
+					smoothSeasonalSubCycles(useResidualWeights);
+				}
+			}
+			else {
+				for (int iteration = 0; iteration < fInnerIterations; ++iteration) {
+					smoothSeasonalSubCycles(useResidualWeights);
+					removeSeasonality();
+					updateSeasonalAndTrend(useResidualWeights);
+				}
 			}
 
 			if (++outerIteration > fRobustIterations)
@@ -796,6 +831,7 @@ public class SeasonalTrendLoess {
 	private void updateSeasonalAndTrend(boolean useResidualWeights) {
 
 		double[] data = fDecomposition.fData;
+		double[][] exogenousData = fDecomposition.fExogenousData;
 		double[] trend = fDecomposition.fTrend;
 		double[] weights = fDecomposition.fWeights;
 		double[] seasonal = fDecomposition.fSeasonal;
@@ -810,7 +846,15 @@ public class SeasonalTrendLoess {
 
 		double[] residualWeights = useResidualWeights ? weights : null;
 
-		LoessSmoother trendSmoother = fLoessSmootherFactory.setData(trend).setExternalWeights(residualWeights).build();
+		// if exogenous data are involved , setting jump to 1 to not miss modeling any such effects
+		if (exogenousData != null)
+			fLoessSmootherFactory.setJump(1);
+
+		LoessSmoother trendSmoother = fLoessSmootherFactory
+				.setData(trend)
+				.setExogenousInputs(exogenousData)
+				.setExternalWeights(residualWeights)
+				.build();
 
 		System.arraycopy(trendSmoother.smooth(), 0, trend, 0, trend.length);
 
