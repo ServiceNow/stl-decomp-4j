@@ -275,7 +275,6 @@ public class CyclicSubSeriesSmoother {
 	 *
 	 * @param rawData      input data
 	 * @param smoothedData output data
-	 * @param exogenousinputs exogenous inputs data where each row is an input
 	 * @param weights      weights to use in the underlying interpolator; ignored if null.
 	 */
 	public void smoothSeasonal(double[] rawData, double[] smoothedData, double[] weights) {
