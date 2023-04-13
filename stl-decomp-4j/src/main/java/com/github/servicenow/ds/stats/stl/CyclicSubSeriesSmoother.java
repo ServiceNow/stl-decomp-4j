@@ -13,7 +13,7 @@ public class CyclicSubSeriesSmoother {
 	private final double[][] fRawCyclicSubSeries;
 	private final double[][] fSmoothedCyclicSubSeries;
 
-	// reshaped version of exogenous inputs with an extra dimension created to form subseries with respect to the periodicity,
+	// reshaped version of exogenous inputs with an extra dimension created to form sub-series with respect to the periodicity,
 	// thereby leading to the dimensions [periodicity][numOfExogData][numOfDataInEachCycle]
 	private final double[][][] fExogenousCyclicSeries;
 
@@ -110,9 +110,10 @@ public class CyclicSubSeriesSmoother {
 		}
 
 		/**
-		 * Get the exogenous data inputs that was decomposed
+		 * Set the exogenous data inputs
 		 *
-		 * @return double[][] the exogenous data inputs
+		 * @param exogenousData exogenous independent variables that may have affected the input data
+		 * @return this
 		 */
 		public Builder setExogenousData(double[][] exogenousData) {
 			fExogenousData = exogenousData;
