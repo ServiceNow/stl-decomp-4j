@@ -112,6 +112,7 @@ public class CyclicSubSeriesSmoother {
 		/**
 		 * Get the exogenous data inputs that was decomposed
 		 *
+		 * @param exogenousData the exogenous data inputs to be used where each row is an input.
 		 * @return double[][] the exogenous data inputs
 		 */
 		public Builder setExogenousData(double[][] exogenousData) {
