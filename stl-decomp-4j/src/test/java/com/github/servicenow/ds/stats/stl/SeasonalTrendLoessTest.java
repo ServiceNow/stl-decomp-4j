@@ -1,7 +1,5 @@
 package com.github.servicenow.ds.stats.stl;
 
-import java.io.IOException;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -553,11 +551,11 @@ public class SeasonalTrendLoessTest {
 		final double stlVar = seasonalVar + trendVar + resVar;
 
 		System.out.println("     \t\tmean\tvariance");
-		System.out.println(String.format("data     \t%f\t%f", dataMean, dataVar));
-		System.out.println(String.format("seasonal \t%f\t%f", seasonalMean, seasonalVar));
-		System.out.println(String.format("trend    \t%f\t%f", trendMean, trendVar));
-		System.out.println(String.format("residual \t%f\t%f", resMean, resVar));
-		System.out.println(String.format("stl sum  \t%f\t%f", stlMean, stlVar));
+		System.out.printf("data     \t%f\t%f%n", dataMean, dataVar);
+		System.out.printf("seasonal \t%f\t%f%n", seasonalMean, seasonalVar);
+		System.out.printf("trend    \t%f\t%f%n", trendMean, trendVar);
+		System.out.printf("residual \t%f\t%f%n", resMean, resVar);
+		System.out.printf("stl sum  \t%f\t%f%n", stlMean, stlVar);
 	}
 
 	@Ignore("This is just for data generation so we can compare the Java results in Python")
@@ -585,7 +583,7 @@ public class SeasonalTrendLoessTest {
 		double mean = rsum / data.length;
 		double variance = (r2sum - rsum * rsum) / (data.length - 1);
 
-		System.out.println(String.format("Residual has mean %f and variance %f", mean, variance));
+		System.out.printf("Residual has mean %f and variance %f%n", mean, variance);
 
 		// dumpStlResultsToFile(data, stl, "/tmp/stl_test.csv");
 	}
@@ -615,11 +613,11 @@ public class SeasonalTrendLoessTest {
 		double[] residuals = stl.getResidual();
 		double[] weights = stl.getWeights();
 
-		System.out.println(String.format("%8s %18s  \t%18s  \t%18s  \t%18s  \t%18s", "index", "data", "trend",
-				"seasonal", "residual", "weights"));
+		System.out.printf("%8s %18s  \t%18s  \t%18s  \t%18s  \t%18s%n", "index", "data", "trend",
+				"seasonal", "residual", "weights");
 		for (int i = 0; i < data.length; ++i) {
-			System.out.println(String.format("%8d %18.14f  \t%18.14f  \t%18.14f  \t%18.14f  \t%18.14f", i, data[i],
-					trend[i], seasonal[i], residuals[i], weights[i]));
+			System.out.printf("%8d %18.14f  \t%18.14f  \t%18.14f  \t%18.14f  \t%18.14f%n", i, data[i],
+					trend[i], seasonal[i], residuals[i], weights[i]);
 		}
 	}
 

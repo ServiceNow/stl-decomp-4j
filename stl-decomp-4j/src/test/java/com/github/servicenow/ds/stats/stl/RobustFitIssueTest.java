@@ -251,8 +251,8 @@ public class RobustFitIssueTest {
 	}
 
 	private void printStlResultsAtIndex(int idx, double[] data, SeasonalTrendLoess.Decomposition stl) {
-		System.out.println(String.format("@ %4d: value = %f, trend = %f, seasonal = %f, residual = %f, weight = %f",
-				idx, data[idx], stl.getTrend()[idx], stl.getSeasonal()[idx], stl.getResidual()[idx], stl.getWeights()[idx]));
+		System.out.printf("@ %4d: value = %f, trend = %f, seasonal = %f, residual = %f, weight = %f%n",
+				idx, data[idx], stl.getTrend()[idx], stl.getSeasonal()[idx], stl.getResidual()[idx], stl.getWeights()[idx]);
 	}
 
 	private void printMeanSquareResidual(double[] data, SeasonalTrendLoess.Decomposition stl) {
@@ -285,9 +285,9 @@ public class RobustFitIssueTest {
 			}
 		}
 
-		System.out.println(String.format("%f, %f, %f, %f, %d, %f , %f, %d, %f",
+		System.out.printf("%f, %f, %f, %f, %d, %f , %f, %d, %f%n",
 				Math.sqrt(r2 / data.length), r2max, Math.sqrt(w2 / data.length),
-				wmin, idx_wmin, weights[376], wmax, idx_wmax, weights[816]));
+				wmin, idx_wmin, weights[376], wmax, idx_wmax, weights[816]);
 	}
 
 	private void printStlFit(SeasonalTrendLoess.Decomposition stl) {
@@ -298,7 +298,7 @@ public class RobustFitIssueTest {
 
 		System.out.println("seasonal, trend, residual, weight");
 		for (int i = 0; i < seasonal.length; ++i)
-			System.out.println(String.format("%f, %f, %f, %f", seasonal[i], trend[i], residual[i], weight[i]));
+			System.out.printf("%f, %f, %f, %f%n", seasonal[i], trend[i], residual[i], weight[i]);
 
 	}
 }

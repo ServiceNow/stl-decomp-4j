@@ -14,7 +14,7 @@ import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
  * <p>
  * Author: Jim Crotinger, based on the original RATFOR source from netlib, with quadratic regression added May 2016.
  */
-abstract class LoessInterpolator {
+public abstract class LoessInterpolator {
 
 	// -----------------------------------------------------------------------------------------------------------------
 	// State
@@ -50,7 +50,7 @@ abstract class LoessInterpolator {
 		/**
 		 * Set the width of the LOESS smoother.
 		 *
-		 * @param width
+		 * @param width - number of points to use for smoothing the current point
 		 * @return this
 		 */
 		public Builder setWidth(int width) {
@@ -61,7 +61,7 @@ abstract class LoessInterpolator {
 		/**
 		 * Set the degree of the LOESS interpolator. Defaults to 1.
 		 *
-		 * @param degree
+		 * @param degree - degree of the polynomial used for smoothing
 		 * @return this
 		 */
 		Builder setDegree(int degree) {
@@ -74,10 +74,9 @@ abstract class LoessInterpolator {
 
 		/**
 		 * Set the external weights for interpolation.
-		 *
 		 * Not required - null is equivalent to all weights being 1.
 		 *
-		 * @param weights
+		 * @param weights - array of externally supplied weights. 
 		 * @return this
 		 */
 		Builder setExternalWeights(double[] weights) {
@@ -99,8 +98,8 @@ abstract class LoessInterpolator {
 		/**
 		 * Create a LoessInterpolator for interpolating the given data array.
 		 *
-		 * @param data
-		 * @param exogenousData
+		 * @param data - array of data to be interpolated
+		 * @param exogenousData - the exogenous inputs, where each row of this double[][] is an individual input
 		 * @return new LoessInterpolator
 		 */
 		public LoessInterpolator interpolate(double[] data, double[][] exogenousData) {
@@ -202,21 +201,11 @@ abstract class LoessInterpolator {
 	 *            int leftmost coordinate to use from the input data
 	 * @param right
 	 *            int rightmost coordinate to use from the input data
-	 * @return State indicating the whether we can do linear, moving average, or nothing
+	 * @return State indicating whether we can do linear, moving average, or nothing
 	 */
 	private State computeNeighborhoodWeights(double x, int left, int right) {
 
-		double lambda = Math.max(x - left, right - x);
-
-		// Ordinarily, lambda ~ width / 2.
-		//
-		// If width > n, then we will only be computing with n points (i.e. left and right will always be in the
-		// domain of 1..n) and the above calculation will give lambda ~ n / 2. We want the shape of the neighborhood
-		// weight function to be driven by width, not by the size of the domain, so we adjust lambda to be ~ width / 2.
-		// (The paper does this by multiplying the above lambda by (width / n). Not sure why the code is different.)
-
-		if (fWidth > fData.length)
-			lambda += (double) ((fWidth - fData.length) / 2);
+		final double lambda = calcLambda(x, left, right);
 
 		// "Neighborhood" is computed somewhat fuzzily.
 
@@ -263,6 +252,23 @@ abstract class LoessInterpolator {
 			fWeights[j] /= totalWeight;
 
 		return (lambda > 0) ? State.LINEAR_OK : State.LINEAR_FAILED;
+	}
+
+	private double calcLambda(double x, int left, int right) {
+		double lambda = Math.max(x - left, right - x);
+
+		// Ordinarily, lambda ~ width / 2.
+		//
+		// If width > n, then we will only be computing with n points (i.e. left and right will always be in the
+		// domain of 1..n) and the above calculation will give lambda ~ n / 2. We want the shape of the neighborhood
+		// weight function to be driven by width, not by the size of the domain, so we adjust lambda to be ~ width / 2.
+		// (The paper does this by multiplying the above lambda by (width / n). Not sure why the code is different.)
+
+		if (fWidth > fData.length) {
+			int rounded = (fWidth - fData.length) / 2; // extracted to keep IDEA from giving a dumb warning
+			lambda += rounded;
+		}
+		return lambda;
 	}
 
 	/**
@@ -361,7 +367,7 @@ class FlatLoessInterpolator extends LoessInterpolator {
 	 *
 	 * @param width           - the width of the neighborhood weighting function
 	 * @param data            - underlying data set that is being smoothed
-	 * @param externalWeights
+	 * @param externalWeights - optional externally supplied weights
 	 * @param outputNonExogenousPart - boolean to output only the non-exogenous (the constant+trend) component from the smoother
 	 */
 	FlatLoessInterpolator(int width, double[] data, double[][] exogenousData, double[] externalWeights, boolean outputNonExogenousPart) {
@@ -383,7 +389,7 @@ class LinearLoessInterpolator extends LoessInterpolator {
 	 *
 	 * @param width           - the width of the neighborhood weighting function
 	 * @param data            - underlying data set that is being smoothed
-	 * @param externalWeights
+	 * @param externalWeights - optional externally supplied weights
 	 * @param exogenousData   - the exogenous inputs by the user, where each row of this double[][] is an individual input
 	 * @param outputNonExogenousPart - boolean to output only the non-exogenous (the constant+trend) component from the smoother
 	 */
@@ -435,7 +441,7 @@ class QuadraticLoessInterpolator extends LoessInterpolator {
 	 *
 	 * @param width           - the width of the neighborhood weighting function
 	 * @param data            - underlying data set that is being smoothed
-	 * @param externalWeights
+	 * @param externalWeights - optional externally supplied weights
 	 * @param exogenousData   - the exogenous inputs by the user, where each row of this double[][] is an individual input
 	 * @param outputNonExogenousPart - boolean to output only the non-exogenous (the constant+trend) component from the smoother
 	 */

@@ -18,8 +18,8 @@ public class TimeSeriesUtilitiesTest {
         double[] data = createRandomArray(length);
 
         double sum = 0.0;
-        for (int i = 0; i < data.length; ++i) {
-            sum += data[i];
+        for (double datum : data) {
+            sum += datum;
         }
 
         double mean = sum / data.length;

@@ -3,7 +3,7 @@ package com.github.servicenow.ds.stats.stl;
 import java.util.Arrays;
 
 /**
- * Encapsulate the complexity of smoothing the cyclic sub-series in a separate class.
+ * Encapsulate the complexity of smoothing the cyclic subseries in a separate class.
  * <p>
  * Created by Jim Crotinger on 13-May-2016.
  */
@@ -13,8 +13,8 @@ public class CyclicSubSeriesSmoother {
 	private final double[][] fRawCyclicSubSeries;
 	private final double[][] fSmoothedCyclicSubSeries;
 
-	// reshaped version of exogenous inputs with an extra dimension created to form subseries with respect to the periodicity,
-	// thereby leading to the dimensions [periodicity][numOfExogData][numOfDataInEachCycle]
+	// reshaped version of exogenous inputs with an extra dimension created to form subseries with respect
+	// to the periodicity, thereby leading to the dimensions [periodicity][numOfExogData][numOfDataInEachCycle]
 	private final double[][][] fExogenousCyclicSeries;
 
 	// controls the output of non-exogenous component from the fit
@@ -50,7 +50,7 @@ public class CyclicSubSeriesSmoother {
 		private double[][] fExogenousData;
 
 		/**
-		 * Set the width of the LOESS smoother used to smooth each seasonal sub-series.
+		 * Set the width of the LOESS smoother used to smooth each seasonal subseries.
 		 *
 		 * @param width width of the LOESS smoother
 		 * @return this
@@ -61,7 +61,7 @@ public class CyclicSubSeriesSmoother {
 		}
 
 		/**
-		 * Set the degree of the LOESS smoother used to smooth each seasonal sub-series.
+		 * Set the degree of the LOESS smoother used to smooth each seasonal subseries.
 		 *
 		 * @param degree degree of the LOESS smoother
 		 * @return this
@@ -75,7 +75,7 @@ public class CyclicSubSeriesSmoother {
 		}
 
 		/**
-		 * Set the jump (number of points to skip) between LOESS interpolations when smoothing the seasonal sub-series.
+		 * Set the jump (number of points to skip) between LOESS interpolations when smoothing the seasonal subseries.
 		 * <p>
 		 * Defaults to 1 (computes LOESS interpolation at each point).
 		 *
@@ -88,7 +88,7 @@ public class CyclicSubSeriesSmoother {
 		}
 
 		/**
-		 * Set the total length of the data that will be deconstructed into cyclic sub-series.
+		 * Set the total length of the data that will be deconstructed into cyclic subseries.
 		 *
 		 * @param dataLength total length of the data
 		 * @return this
@@ -110,10 +110,10 @@ public class CyclicSubSeriesSmoother {
 		}
 
 		/**
-		 * Get the exogenous data inputs that was decomposed
+		 * Set the exogenous data inputs
 		 *
 		 * @param exogenousData the exogenous data inputs to be used where each row is an input.
-		 * @return double[][] the exogenous data inputs
+		 * @return this
 		 */
 		public Builder setExogenousData(double[][] exogenousData) {
 			fExogenousData = exogenousData;
@@ -171,7 +171,7 @@ public class CyclicSubSeriesSmoother {
 		}
 
 		/**
-		 * Build the sub-series smoother.
+		 * Build the subseries smoother.
 		 *
 		 * @return new CyclicSubSeriesSmoother
 		 */
@@ -202,7 +202,7 @@ public class CyclicSubSeriesSmoother {
 	}
 
 	/**
-	 * Create a cyclic sub-series smoother with the specified properties.
+	 * Create a cyclic subseries smoother with the specified properties.
 	 *
 	 * @param width                           width of the LOESS smoother
 	 * @param degree                          degree of the LOESS smoother
@@ -247,7 +247,7 @@ public class CyclicSubSeriesSmoother {
 		//
 		// n = m * periodicity + r
 		//
-		// where r < periodicity. The first r sub-series will have length m + 1 and the remaining will have length m.
+		// where r < periodicity. The first r subseries will have length m + 1 and the remaining will have length m.
 		// Another way to look at this is that the cycle length is
 		//
 		// cycleLength = (n - p - 1) / periodicity + 1
@@ -271,8 +271,8 @@ public class CyclicSubSeriesSmoother {
 	}
 
 	/**
-	 * Run the cyclic sub-series smoother on the specified data, with the specified weights (ignored if null). The
-	 * sub-series are reconstructed into a single series in smoothedData.
+	 * Run the cyclic subseries smoother on the specified data, with the specified weights (ignored if null). The
+	 * subseries are reconstructed into a single series in smoothedData.
 	 *
 	 * @param rawData      input data
 	 * @param smoothedData output data
@@ -316,7 +316,7 @@ public class CyclicSubSeriesSmoother {
 	}
 
 	private void reconstructExtendedDataFromSubSeries(double[] data) {
-		// Copy this smoothed cyclic sub-series to the extendedSeasonal work array.
+		// Copy this smoothed cyclic subseries to the extendedSeasonal work array.
 		for (int period = 0; period < fPeriodLength; ++period) {
 			final int cycleLength = (period < fRemainder) ? (fNumPeriods + 1) : fNumPeriods;
 			for (int i = 0; i < fNumPeriodsToExtrapolateBackward + cycleLength + fNumPeriodsToExtrapolateForward; ++i) {
@@ -326,18 +326,19 @@ public class CyclicSubSeriesSmoother {
 	}
 
 	/**
-	 * Use LOESS interpolation on each of the cyclic sub-series (e.g. in monthly data, smooth the Januaries, Februaries,
+	 * Use LOESS interpolation on each of the cyclic subseries (e.g. in monthly data, smooth the Januaries, Februaries,
 	 * etc.).
 	 *
 	 * @param weights      external weights for interpolation
 	 * @param rawData      input data to be smoothed
 	 * @param smoothedData output smoothed data
+	 * @param exogenousCyclicSeries exogenous data separated into subseries
 	 */
 	private void smoothOneSubSeries(double[] weights, double[] rawData, double[] smoothedData, double[][] exogenousCyclicSeries) {
 
 		final int cycleLength = rawData.length;
 
-		// Smooth the cyclic sub-series with LOESS and then extrapolate one place beyond each end.
+		// Smooth the cyclic subseries with LOESS and then extrapolate one place beyond each end.
 
 		LoessSmoother smoother = fLoessSmootherFactory
 				.setData(rawData)
@@ -357,7 +358,8 @@ public class CyclicSubSeriesSmoother {
 					.setDegree(fDegree)
 					.setOutputNonExogenousPart(fOutputNonExogenousPart)
 					.setExternalWeights(weights)
-					.interpolate(Arrays.copyOf(smoothedData, rawData.length), null); // if with exogs, remove them and forecast only non-exog part.
+					.interpolate(Arrays.copyOf(smoothedData, rawData.length), null);
+					// if with exogs, remove them and forecast only non-exog part.
 		else
 			interpolator = smoother.getInterpolator();
 
@@ -386,7 +388,7 @@ public class CyclicSubSeriesSmoother {
 
 //	@SuppressWarnings("unused")
 //	private static void dumpCyclicSubseriesDebugData(int p, int cycleLength, double[] smoothedData, double[] inputData) {
-//		System.out.println(String.format("subcycle smoother at j = %d", p));
+//		System.out.println(String.format("subseries smoother at j = %d", p));
 //		System.out.println(String.format("                              , smoothed(%2d) = %22.15e", 0, smoothedData[0]));
 //		for (int i = 0; i < cycleLength; ++i) {
 //			System.out.println(String.format("y(%2d) = %22.15e, smoothed(%2d) = %22.15e", i, inputData[i], i + 1,
